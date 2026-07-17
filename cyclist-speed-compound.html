@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Average Speed — Compound Slot</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 750px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 16px 18px 12px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 50%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 24px; display: flex; flex-direction: column; }
+  .spacer-top { height: 20px; }
+
+  .prompt-text { font-size: 15px; line-height: 1.5; color: #1a1a1a; margin-bottom: 16px; }
+
+  /* Interactive box */
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px 14px;
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 14px;
+    margin-bottom: 14px;
+  }
+  .equation-row { display: contents; }
+  .label-text { font-size: 15px; color: #1a1a1a; }
+  .equals-sign { font-size: 17px; color: #1a1a1a; }
+  .rhs { display: flex; align-items: center; }
+
+  .fraction { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+  .frac-bar { width: 100%; height: 1.5px; background: #1a1a1a; min-width: 60px; }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 56px; height: 32px; padding: 0 8px;
+    border: 1.5px solid #d0d0d0; border-radius: 6px;
+    background: #fafafa; cursor: pointer; transition: all 0.15s;
+  }
+  .slot:hover { border-color: #aaa; }
+  .slot.active { border-color: #888; background: #f5f5f5; }
+  .slot.filled { border-color: #bbb; background: #f5f5f5; }
+  .slot .katex { font-size: 0.88em; }
+
+  /* Compound answer slot */
+  .compound-slot {
+    display: flex; align-items: stretch;
+    border: 1.5px dashed #c8c8c8; border-radius: 10px;
+    height: 52px; min-width: 190px;
+    transition: border-style 0.3s;
+  }
+  .compound-slot.has-fill { border-style: solid; border-color: #d0d0d0; }
+
+  .compound-half {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 0 6px; cursor: pointer;
+  }
+  .compound-placeholder { font-size: 11.5px; color: #bbb; font-style: italic; }
+  .compound-value { font-size: 17px; font-weight: 500; color: #1a1a1a; }
+  .compound-half .katex { font-size: 0.85em; }
+  .compound-divider { display: flex; align-items: center; flex-shrink: 0; }
+
+  /* Tile bank */
+  .bank-section { margin-bottom: 12px; }
+  .bank-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin-bottom: 8px;
+  }
+
+  .tile {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; height: 36px; padding: 0 12px;
+    background: #fff; border: 1.5px solid #d0d0d0; border-radius: 8px;
+    font-size: 14px; font-weight: 500; color: #1a1a1a;
+    cursor: pointer; transition: all 0.12s; user-select: none;
+  }
+  .tile:hover { border-color: #999; }
+  .tile.pressed { background: #e8e8e8; border-color: #999; transform: scale(0.93); }
+  .tile.used { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .tile .katex { font-size: 0.88em; }
+
+  /* Shaped tiles */
+  .shaped-tile {
+    cursor: pointer; transition: all 0.12s; user-select: none;
+    flex-shrink: 0;
+  }
+  .shaped-tile:hover svg path.shape { stroke: #999; }
+  .shaped-tile.pressed { transform: scale(0.93); }
+  .shaped-tile.used { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+
+  .start-over {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    color: #aaa; font-size: 14px; cursor: pointer; margin-bottom: 16px;
+  }
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 48px; border-radius: 24px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 24px; bottom: 28px;
+    width: 40px; height: 40px; background: #2ecc40; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="prompt-text">
+      A cyclist travels 60&thinsp;km in 3&thinsp;hours. Find their average speed with the appropriate unit.
+    </div>
+
+    <div class="interactive-box">
+      <!-- Row 1: Speed = fraction -->
+      <div class="equation-row">
+        <span class="label-text">Speed</span>
+        <span class="equals-sign">=</span>
+        <div class="rhs">
+          <div class="fraction">
+            <div class="slot active" id="slot-frac-num"></div>
+            <div class="frac-bar"></div>
+            <div class="slot" id="slot-frac-den"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Row 2: = compound slot -->
+      <div class="equation-row">
+        <span></span>
+        <span class="equals-sign">=</span>
+        <div class="rhs">
+          <div class="compound-slot" id="compound-slot">
+            <div class="compound-half" id="compound-num">
+              <span class="compound-placeholder">number</span>
+            </div>
+            <div class="compound-divider">
+              <svg viewBox="0 0 16 52" width="16" height="52">
+                <path id="wave-path" d="M 8,0 C 15,9 1,18 8,26 C 15,35 1,44 8,52"
+                      fill="none" stroke="#c8c8c8" stroke-width="1.5" stroke-dasharray="4,3"/>
+              </svg>
+            </div>
+            <div class="compound-half" id="compound-unit">
+              <span class="compound-placeholder">unit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile banks -->
+    <div class="bank-section">
+      <!-- Fraction tiles (regular rectangles) -->
+      <div class="bank-row" id="bank-frac"></div>
+      <!-- Shaped answer tiles -->
+      <div class="bank-row" id="bank-answer"></div>
+    </div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+// ── Tile data ──
+
+const FRAC_TILES = [
+  { latex: '60\\,\\text{km}' },
+  { latex: '3\\,\\text{h}' },
+];
+
+const NUM_TILES = [
+  { label: '20' },
+  { label: '180' },
+];
+
+const UNIT_TILES = [
+  { svgLabel: null, frac: { num: 'km', den: 'h' }, latex: '\\dfrac{\\text{km}}{\\text{h}}' },
+  { svgLabel: null, frac: { num: 'h', den: 'km' }, latex: '\\dfrac{\\text{h}}{\\text{km}}' },
+  { svgLabel: 'km·h', frac: null, latex: '\\text{km}\\!\\cdot\\!\\text{h}' },
+];
+
+const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+// Wave constants (±7px amplitude)
+const AMP = 7;
+function numTilePath(w, h) {
+  const wx = w - 14;
+  return `M 4,1 L ${wx},1 C ${wx+AMP},${h*0.18} ${wx-AMP},${h*0.36} ${wx},${h*0.5} C ${wx+AMP},${h*0.64} ${wx-AMP},${h*0.82} ${wx},${h-1} L 4,${h-1} C 2,${h-1} 1,${h-2} 1,${h-3} L 1,4 C 1,2 2,1 4,1 Z`;
+}
+
+function unitTilePath(w, h) {
+  const wx = 14;
+  return `M ${wx},1 C ${wx-AMP},${h*0.18} ${wx+AMP},${h*0.36} ${wx},${h*0.5} C ${wx-AMP},${h*0.64} ${wx+AMP},${h*0.82} ${wx},${h-1} L ${w-4},${h-1} C ${w-2},${h-1} ${w-1},${h-2} ${w-1},${h-3} L ${w-1},4 C ${w-1},2 ${w-2},1 ${w-4},1 L ${wx},1 Z`;
+}
+
+// ── State ──
+
+let fracNumIdx = null;
+let fracDenIdx = null;
+let ansNumIdx = null;
+let ansUnitIdx = null;
+let activeSlot = 'frac-num';
+let interactionEnabled = false;
+
+// ── Build tile bank ──
+
+function buildBank() {
+  const fracBank = document.getElementById('bank-frac');
+  const ansBank = document.getElementById('bank-answer');
+  fracBank.innerHTML = '';
+  ansBank.innerHTML = '';
+
+  // Fraction tiles (regular)
+  FRAC_TILES.forEach((t, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.type = 'frac';
+    tile.dataset.index = i;
+    renderLatex(tile, t.latex);
+    tile.addEventListener('click', () => { if (interactionEnabled) placeFracTile(i); });
+    fracBank.appendChild(tile);
+  });
+
+  // Shaped number tiles
+  const TW = 76, TH = 46;
+  NUM_TILES.forEach((t, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'shaped-tile';
+    wrap.dataset.type = 'num';
+    wrap.dataset.index = i;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${TW} ${TH}`);
+    svg.setAttribute('width', TW);
+    svg.setAttribute('height', TH);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', numTilePath(TW, TH));
+    path.setAttribute('fill', '#fff');
+    path.setAttribute('stroke', '#d0d0d0');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('class', 'shape');
+    svg.appendChild(path);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', (TW - 14) / 2);
+    txt.setAttribute('y', TH / 2 + 5);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('font-family', FONT);
+    txt.setAttribute('font-size', '15');
+    txt.setAttribute('font-weight', '500');
+    txt.setAttribute('fill', '#1a1a1a');
+    txt.textContent = t.label;
+    svg.appendChild(txt);
+    wrap.appendChild(svg);
+    wrap.addEventListener('click', () => { if (interactionEnabled) placeNumTile(i); });
+    ansBank.appendChild(wrap);
+  });
+
+  // Shaped unit tiles
+  const UW = 76, UH = 46;
+  UNIT_TILES.forEach((t, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'shaped-tile';
+    wrap.dataset.type = 'unit';
+    wrap.dataset.index = i;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${UW} ${UH}`);
+    svg.setAttribute('width', UW);
+    svg.setAttribute('height', UH);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', unitTilePath(UW, UH));
+    path.setAttribute('fill', '#fff');
+    path.setAttribute('stroke', '#d0d0d0');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('class', 'shape');
+    svg.appendChild(path);
+
+    const cx = 14 + (UW - 14) / 2;
+    if (t.frac) {
+      const tn = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      tn.setAttribute('x', cx); tn.setAttribute('y', UH * 0.36);
+      tn.setAttribute('text-anchor', 'middle'); tn.setAttribute('font-family', FONT);
+      tn.setAttribute('font-size', '12'); tn.setAttribute('font-weight', '500'); tn.setAttribute('fill', '#1a1a1a');
+      tn.textContent = t.frac.num;
+      svg.appendChild(tn);
+      const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      ln.setAttribute('x1', cx - 10); ln.setAttribute('y1', UH * 0.5);
+      ln.setAttribute('x2', cx + 10); ln.setAttribute('y2', UH * 0.5);
+      ln.setAttribute('stroke', '#1a1a1a'); ln.setAttribute('stroke-width', '1');
+      svg.appendChild(ln);
+      const td = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      td.setAttribute('x', cx); td.setAttribute('y', UH * 0.78);
+      td.setAttribute('text-anchor', 'middle'); td.setAttribute('font-family', FONT);
+      td.setAttribute('font-size', '12'); td.setAttribute('font-weight', '500'); td.setAttribute('fill', '#1a1a1a');
+      td.textContent = t.frac.den;
+      svg.appendChild(td);
+    } else {
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', cx); txt.setAttribute('y', UH / 2 + 5);
+      txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-family', FONT);
+      txt.setAttribute('font-size', '12'); txt.setAttribute('font-weight', '500'); txt.setAttribute('fill', '#1a1a1a');
+      txt.textContent = t.svgLabel;
+      svg.appendChild(txt);
+    }
+
+    wrap.appendChild(svg);
+    wrap.addEventListener('click', () => { if (interactionEnabled) placeUnitTile(i); });
+    ansBank.appendChild(wrap);
+  });
+}
+
+// ── Render ──
+
+function render() {
+  // Fraction slots
+  const fn = document.getElementById('slot-frac-num');
+  const fd = document.getElementById('slot-frac-den');
+  fn.classList.remove('active', 'filled'); fn.innerHTML = '';
+  fd.classList.remove('active', 'filled'); fd.innerHTML = '';
+
+  if (fracNumIdx !== null) { fn.classList.add('filled'); renderLatex(fn, FRAC_TILES[fracNumIdx].latex); }
+  else if (activeSlot === 'frac-num') fn.classList.add('active');
+
+  if (fracDenIdx !== null) { fd.classList.add('filled'); renderLatex(fd, FRAC_TILES[fracDenIdx].latex); }
+  else if (activeSlot === 'frac-den') fd.classList.add('active');
+
+  // Compound slot
+  const cs = document.getElementById('compound-slot');
+  const cn = document.getElementById('compound-num');
+  const cu = document.getElementById('compound-unit');
+  const wp = document.getElementById('wave-path');
+  const hasFill = ansNumIdx !== null || ansUnitIdx !== null;
+
+  cs.classList.toggle('has-fill', hasFill);
+  wp.setAttribute('stroke-dasharray', hasFill ? 'none' : '4,3');
+  wp.setAttribute('stroke', hasFill ? '#d0d0d0' : '#c8c8c8');
+
+  cn.innerHTML = '';
+  if (ansNumIdx !== null) {
+    const v = document.createElement('span');
+    v.className = 'compound-value';
+    v.textContent = NUM_TILES[ansNumIdx].label;
+    cn.appendChild(v);
+  } else {
+    const p = document.createElement('span');
+    p.className = 'compound-placeholder';
+    p.textContent = 'number';
+    cn.appendChild(p);
+  }
+
+  cu.innerHTML = '';
+  if (ansUnitIdx !== null) {
+    const v = document.createElement('span');
+    v.className = 'compound-value';
+    renderLatex(v, UNIT_TILES[ansUnitIdx].latex);
+    cu.appendChild(v);
+  } else {
+    const p = document.createElement('span');
+    p.className = 'compound-placeholder';
+    p.textContent = 'unit';
+    cu.appendChild(p);
+  }
+
+  // Tile used states
+  document.querySelectorAll('[data-type="frac"]').forEach(t => {
+    const i = parseInt(t.dataset.index);
+    t.classList.toggle('used', i === fracNumIdx || i === fracDenIdx);
+  });
+  document.querySelectorAll('[data-type="num"]').forEach(t => {
+    t.classList.toggle('used', parseInt(t.dataset.index) === ansNumIdx);
+  });
+  document.querySelectorAll('[data-type="unit"]').forEach(t => {
+    t.classList.toggle('used', parseInt(t.dataset.index) === ansUnitIdx);
+  });
+
+  // Check button
+  const allFilled = fracNumIdx !== null && fracDenIdx !== null && ansNumIdx !== null && ansUnitIdx !== null;
+  document.getElementById('check-btn').classList.toggle('ready', allFilled);
+}
+
+// ── Tile placement ──
+
+function placeFracTile(idx) {
+  if (idx === fracNumIdx || idx === fracDenIdx) return;
+  if (activeSlot === 'frac-num') {
+    fracNumIdx = idx;
+    activeSlot = fracDenIdx === null ? 'frac-den' : null;
+  } else if (activeSlot === 'frac-den') {
+    fracDenIdx = idx;
+    activeSlot = fracNumIdx === null ? 'frac-num' : null;
+  } else return;
+  render();
+}
+
+function placeNumTile(idx) {
+  if (idx === ansNumIdx) return;
+  ansNumIdx = idx;
+  render();
+}
+
+function placeUnitTile(idx) {
+  if (idx === ansUnitIdx) return;
+  ansUnitIdx = idx;
+  render();
+}
+
+function resetAll() {
+  fracNumIdx = null; fracDenIdx = null;
+  ansNumIdx = null; ansUnitIdx = null;
+  activeSlot = 'frac-num';
+  const btn = document.getElementById('check-btn');
+  btn.classList.remove('ready', 'correct');
+  btn.textContent = 'Check';
+  render();
+}
+
+// ── Slot click handlers (free tile) ──
+
+document.getElementById('slot-frac-num').addEventListener('click', () => {
+  if (!interactionEnabled || fracNumIdx === null) return;
+  fracNumIdx = null; activeSlot = 'frac-num'; render();
+});
+document.getElementById('slot-frac-den').addEventListener('click', () => {
+  if (!interactionEnabled || fracDenIdx === null) return;
+  fracDenIdx = null; activeSlot = 'frac-den'; render();
+});
+document.getElementById('compound-num').addEventListener('click', () => {
+  if (!interactionEnabled || ansNumIdx === null) return;
+  ansNumIdx = null; render();
+});
+document.getElementById('compound-unit').addEventListener('click', () => {
+  if (!interactionEnabled || ansUnitIdx === null) return;
+  ansUnitIdx = null; render();
+});
+
+// ── Animation ──
+
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+let animRunning = false;
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function pressRegularTile(type, idx) {
+  const el = document.querySelector(`[data-type="${type}"][data-index="${idx}"]`);
+  el.classList.add('pressed');
+  await sleep(180);
+  el.classList.remove('pressed');
+}
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+  interactionEnabled = false;
+
+  resetAll(); buildBank(); render();
+  await sleep(1000);
+
+  // Place 60 km in numerator
+  showLabel('Setting up the fraction...');
+  await sleep(400);
+  await pressRegularTile('frac', 0);
+  placeFracTile(0);
+  await sleep(600);
+
+  // Place 3 h in denominator
+  await pressRegularTile('frac', 1);
+  placeFracTile(1);
+  await sleep(800);
+
+  // Place 20 in compound number
+  showLabel('Entering the answer...');
+  await sleep(400);
+  await pressRegularTile('num', 0);
+  placeNumTile(0);
+  await sleep(600);
+
+  // Place km/h in compound unit
+  await pressRegularTile('unit', 0);
+  placeUnitTile(0);
+
+  await sleep(1000);
+
+  // Check
+  showLabel('Checking...');
+  const btn = document.getElementById('check-btn');
+  btn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  btn.style.transform = '';
+  await sleep(300);
+  btn.classList.remove('ready');
+  btn.classList.add('correct');
+  btn.textContent = 'Correct!';
+
+  interactionEnabled = true;
+  animRunning = false;
+}
+
+// ── Init ──
+
+document.getElementById('start-over').addEventListener('click', () => { resetAll(); buildBank(); render(); });
+document.getElementById('replay').addEventListener('click', () => { animRunning = false; setTimeout(animate, 100); });
+
+buildBank();
+render();
+setTimeout(animate, 600);
+</script>
+</body>
+</html>
