@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Draw-a-Line Motion Mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 60%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a; margin-bottom: 12px; margin-top: 10px;
+  }
+
+  /* Graph */
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.15;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .graph-container svg { width: 100%; height: 100%; }
+
+  .control-label {
+    font-size: 13.5px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 10px 20px 24px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 20px; bottom: 24px;
+    width: 38px; height: 38px; background: #2ecc40; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 18px; height: 18px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      A car starts at position 4 m and travels at 3 m/s. Draw a line representing its motion.
+    </div>
+
+    <div class="graph-container">
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="plot-clip">
+            <rect x="45" y="10" width="280" height="250" />
+          </clipPath>
+          <!-- Drop shadow filter for draggable points -->
+          <filter id="point-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="1" stdDeviation="2.5" flood-color="rgba(33,150,243,0.4)"/>
+          </filter>
+        </defs>
+
+        <!-- Grid lines -->
+        <g stroke="#e8e8e8" stroke-width="0.5" id="gridlines"></g>
+
+        <!-- Axes -->
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="265" x2="45" y2="5" stroke="#888" stroke-width="1.5"/>
+        <!-- Arrow heads -->
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <!-- Axis labels -->
+        <text x="330" y="278" font-size="11" fill="#888" text-anchor="end">t (s)</text>
+        <text x="30" y="15" font-size="11" fill="#888" text-anchor="middle">y (m)</text>
+
+        <!-- Tick labels (generated in JS) -->
+        <g id="tick-labels"></g>
+
+        <!-- Plot area (clipped) -->
+        <g clip-path="url(#plot-clip)">
+          <!-- Dashed prediction line through control points -->
+          <line id="prediction-line" x1="0" y1="0" x2="0" y2="0"
+                stroke="#2196f3" stroke-width="2" stroke-dasharray="8,6" opacity="0.7"/>
+
+          <!-- Solid actual path (drawn during car animation) -->
+          <path id="actual-path" d="" stroke="#2196f3" stroke-width="2.5" fill="none" opacity="0"/>
+        </g>
+
+        <!-- Blue car (left of y-axis) -->
+        <g id="car" transform="translate(1, 200)">
+          <rect x="0" y="0" width="28" height="14" rx="3" fill="#2196f3"/>
+          <rect x="4" y="-6" width="14" height="8" rx="2" fill="#90caf9"/>
+          <circle cx="6" cy="16" r="3.5" fill="#333"/>
+          <circle cx="22" cy="16" r="3.5" fill="#333"/>
+          <circle cx="6" cy="16" r="1.5" fill="#666"/>
+          <circle cx="22" cy="16" r="1.5" fill="#666"/>
+        </g>
+
+        <!-- Control point 1 -->
+        <circle id="cp1" cx="0" cy="0" r="8"
+                fill="#2196f3" stroke="#fff" stroke-width="2"
+                cursor="grab" filter="url(#point-shadow)"/>
+
+        <!-- Control point 2 -->
+        <circle id="cp2" cx="0" cy="0" r="8"
+                fill="#2196f3" stroke="#fff" stroke-width="2"
+                cursor="grab" filter="url(#point-shadow)"/>
+      </svg>
+    </div>
+
+    <div class="control-label">Drag the points to draw a line.</div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+// === Coordinate system ===
+const GRAPH = { xMin: 45, xMax: 325, yMin: 260, yMax: 10, tMax: 5.5, yValMax: 22 };
+
+function tToX(t) { return GRAPH.xMin + (t / GRAPH.tMax) * (GRAPH.xMax - GRAPH.xMin); }
+function xToT(x) { return ((x - GRAPH.xMin) / (GRAPH.xMax - GRAPH.xMin)) * GRAPH.tMax; }
+function yToSvgY(y) { return GRAPH.yMin - (y / GRAPH.yValMax) * (GRAPH.yMin - GRAPH.yMax); }
+function svgYToY(sy) { return ((GRAPH.yMin - sy) / (GRAPH.yMin - GRAPH.yMax)) * GRAPH.yValMax; }
+
+// Correct function: y = 3t + 4
+function correctY(t) { return 3 * t + 4; }
+
+// === Generate gridlines and tick labels ===
+function buildGrid() {
+  const grid = document.getElementById('gridlines');
+  const ticks = document.getElementById('tick-labels');
+
+  // Horizontal gridlines at y = 5, 10, 15, 20
+  [5, 10, 15, 20].forEach(yVal => {
+    const sy = yToSvgY(yVal);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', GRAPH.xMin);
+    line.setAttribute('y1', sy.toFixed(1));
+    line.setAttribute('x2', GRAPH.xMax);
+    line.setAttribute('y2', sy.toFixed(1));
+    grid.appendChild(line);
+  });
+
+  // Vertical gridlines at t = 1, 2, 3, 4, 5
+  [1, 2, 3, 4, 5].forEach(t => {
+    const sx = tToX(t);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', sx.toFixed(1));
+    line.setAttribute('y1', GRAPH.yMax);
+    line.setAttribute('x2', sx.toFixed(1));
+    line.setAttribute('y2', GRAPH.yMin);
+    grid.appendChild(line);
+  });
+
+  // T-axis tick labels: 0-5
+  [0, 1, 2, 3, 4, 5].forEach(t => {
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', tToX(t).toFixed(1));
+    txt.setAttribute('y', '278');
+    txt.setAttribute('font-size', '10');
+    txt.setAttribute('fill', '#999');
+    txt.setAttribute('text-anchor', 'middle');
+    txt.textContent = t;
+    ticks.appendChild(txt);
+  });
+
+  // Y-axis tick labels: 0, 5, 10, 15, 20
+  [0, 5, 10, 15, 20].forEach(yVal => {
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', '38');
+    txt.setAttribute('y', (yToSvgY(yVal) + 4).toFixed(1));
+    txt.setAttribute('font-size', '10');
+    txt.setAttribute('fill', '#999');
+    txt.setAttribute('text-anchor', 'end');
+    txt.textContent = yVal;
+    ticks.appendChild(txt);
+  });
+}
+
+// === Control points state ===
+// Starting positions (wrong): (1, 8) and (4, 12)
+// Target positions (correct): (0, 4) and (2, 10)
+let cp1 = { t: 1, y: 8 };
+let cp2 = { t: 4, y: 12 };
+
+function setControlPoint(id, t, y) {
+  const el = document.getElementById(id);
+  el.setAttribute('cx', tToX(t).toFixed(1));
+  el.setAttribute('cy', yToSvgY(y).toFixed(1));
+}
+
+// === Update the dashed prediction line ===
+// Extends through both control points across the full visible plot area
+function updatePredictionLine() {
+  const line = document.getElementById('prediction-line');
+
+  if (Math.abs(cp2.t - cp1.t) < 0.001) {
+    // Vertical line edge case - just hide
+    line.setAttribute('opacity', '0');
+    return;
+  }
+
+  const slope = (cp2.y - cp1.y) / (cp2.t - cp1.t);
+  const intercept = cp1.y - slope * cp1.t;
+
+  // Line: y = slope * t + intercept
+  // Find y at t=0 and t=tMax
+  const tLeft = 0;
+  const tRight = GRAPH.tMax;
+  const yLeft = slope * tLeft + intercept;
+  const yRight = slope * tRight + intercept;
+
+  // Clip to plot area boundaries (y: 0 to yValMax)
+  // We'll compute t values at y=0 and y=yValMax
+  let segments = [];
+  let tStart = tLeft;
+  let tEnd = tRight;
+
+  // Clip vertically
+  if (slope !== 0) {
+    const tAtYMin = (0 - intercept) / slope;
+    const tAtYMax = (GRAPH.yValMax - intercept) / slope;
+
+    const tAtBottom = Math.min(tAtYMin, tAtYMax);
+    const tAtTop = Math.max(tAtYMin, tAtYMax);
+
+    tStart = Math.max(tStart, tAtBottom);
+    tEnd = Math.min(tEnd, tAtTop);
+  } else {
+    // Horizontal line
+    if (intercept < 0 || intercept > GRAPH.yValMax) {
+      line.setAttribute('opacity', '0');
+      return;
+    }
+  }
+
+  if (tStart >= tEnd) {
+    line.setAttribute('opacity', '0');
+    return;
+  }
+
+  const y1 = slope * tStart + intercept;
+  const y2 = slope * tEnd + intercept;
+
+  line.setAttribute('x1', tToX(tStart).toFixed(1));
+  line.setAttribute('y1', yToSvgY(y1).toFixed(1));
+  line.setAttribute('x2', tToX(tEnd).toFixed(1));
+  line.setAttribute('y2', yToSvgY(y2).toFixed(1));
+  line.setAttribute('opacity', '0.7');
+}
+
+// === Position car on y-axis ===
+function positionCar(yVal) {
+  const sy = yToSvgY(yVal);
+  document.getElementById('car').setAttribute('transform',
+    `translate(1, ${(sy - 14).toFixed(1)})`);
+}
+
+// === Build path for actual line ===
+function buildPath(fn, tStart, tEnd, steps) {
+  let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const x = tToX(t);
+    const y = yToSvgY(fn(t));
+    d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+  }
+  return d;
+}
+
+// === Stage label ===
+function showLabel(text, duration) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  if (duration) {
+    setTimeout(() => el.classList.remove('visible'), duration);
+  }
+}
+
+function hideLabel() {
+  document.getElementById('stage-label').classList.remove('visible');
+}
+
+// === Animation helpers ===
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function lerp(a, b, p) { return a + (b - a) * p; }
+
+// Animate a value smoothly with easing
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+let animRunning = false;
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+
+  const predLine = document.getElementById('prediction-line');
+  const actualPath = document.getElementById('actual-path');
+  const checkBtn = document.getElementById('check-btn');
+
+  // === RESET ===
+  cp1 = { t: 1, y: 8 };
+  cp2 = { t: 4, y: 12 };
+
+  setControlPoint('cp1', cp1.t, cp1.y);
+  setControlPoint('cp2', cp2.t, cp2.y);
+  updatePredictionLine();
+
+  actualPath.setAttribute('d', '');
+  actualPath.setAttribute('opacity', '0');
+  checkBtn.classList.remove('ready');
+  checkBtn.style.transform = '';
+  hideLabel();
+
+  // Position car at y=4 (initial position)
+  positionCar(4);
+
+  await sleep(1200);
+
+  // === STAGE 1: Animate first control point to (0, 4) ===
+  showLabel('Adjusting line...', 3500);
+
+  const cp1Start = { t: cp1.t, y: cp1.y };
+  const cp1End = { t: 0, y: 4 };
+  const SLIDE_DURATION = 1200;
+
+  await new Promise(resolve => {
+    const start = performance.now();
+    function frame(now) {
+      const elapsed = now - start;
+      const p = Math.min(elapsed / SLIDE_DURATION, 1);
+      const ep = easeInOut(p);
+
+      cp1.t = lerp(cp1Start.t, cp1End.t, ep);
+      cp1.y = lerp(cp1Start.y, cp1End.y, ep);
+      setControlPoint('cp1', cp1.t, cp1.y);
+      updatePredictionLine();
+
+      if (p < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+
+  await sleep(400);
+
+  // === STAGE 2: Animate second control point to (2, 10) ===
+  const cp2Start = { t: cp2.t, y: cp2.y };
+  const cp2End = { t: 2, y: 10 };
+
+  await new Promise(resolve => {
+    const start = performance.now();
+    function frame(now) {
+      const elapsed = now - start;
+      const p = Math.min(elapsed / SLIDE_DURATION, 1);
+      const ep = easeInOut(p);
+
+      cp2.t = lerp(cp2Start.t, cp2End.t, ep);
+      cp2.y = lerp(cp2Start.y, cp2End.y, ep);
+      setControlPoint('cp2', cp2.t, cp2.y);
+      updatePredictionLine();
+
+      if (p < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+
+  await sleep(500);
+
+  // === STAGE 3: Check button activates ===
+  checkBtn.classList.add('ready');
+
+  await sleep(1500);
+
+  // === STAGE 4: Press Check ===
+  showLabel('Submitting...', 1500);
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  // === STAGE 5: Animate the car and draw the solid line ===
+  await sleep(500);
+  showLabel('Animation playing...', 3500);
+
+  const ANIM_DURATION = 3000;
+  const ANIM_T_MAX = 5;
+
+  actualPath.setAttribute('opacity', '1');
+
+  await new Promise(resolve => {
+    const startTime = performance.now();
+    function animFrame(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / ANIM_DURATION, 1);
+      const currentT = progress * ANIM_T_MAX;
+
+      // Move car vertically
+      const currentY = correctY(currentT);
+      positionCar(currentY);
+
+      // Draw actual path up to current t
+      actualPath.setAttribute('d', buildPath(correctY, 0, currentT, Math.floor(progress * 100)));
+
+      if (progress < 1) {
+        requestAnimationFrame(animFrame);
+      } else {
+        resolve();
+      }
+    }
+    requestAnimationFrame(animFrame);
+  });
+
+  // === STAGE 6: Done ===
+  await sleep(500);
+  showLabel('Correct!', 2000);
+  animRunning = false;
+}
+
+// === Init ===
+function init() {
+  buildGrid();
+
+  // Set initial control point positions
+  setControlPoint('cp1', cp1.t, cp1.y);
+  setControlPoint('cp2', cp2.t, cp2.y);
+  updatePredictionLine();
+
+  // Position car at y=4
+  positionCar(4);
+}
+
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+init();
+setTimeout(animate, 800);
+</script>
+</body>
+</html>

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunctionGraph Motion Mockup - Wrong Answer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 60%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a; margin-bottom: 12px; margin-top: 10px;
+  }
+
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.15;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .graph-container svg { width: 100%; height: 100%; }
+
+  .equations {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .eq-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .eq-label { color: #1a1a1a; }
+  .eq-label.pink { color: #e91e8c; }
+  .eq-label.blue { color: #2196f3; }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 70px; height: 30px; padding: 0 8px;
+    border: 1.5px solid #d0d0d0; border-radius: 6px;
+    background: #fafafa; transition: all 0.2s;
+  }
+  .slot.active { border-color: #2196f3; background: #f0f5ff; }
+  .slot.filled { border-color: #2196f3; background: #f0f5ff; color: #1a1a1a; }
+  .slot.wrong { border-color: #e53935; background: #fef0f0; }
+  .slot .katex { font-size: 0.9em; }
+
+  .keyboard-area {
+    background: #f7f8fa; border-top: 1px solid #e8e8e8;
+    padding: 10px 8px 6px;
+  }
+  .keyboard-row { display: flex; gap: 4px; margin-bottom: 4px; justify-content: center; }
+  .keyboard-row:last-child { margin-bottom: 0; }
+
+  .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 38px;
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 7px;
+    font-size: 16px; font-weight: 500; color: #1a1a1a;
+    transition: all 0.12s; user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .key.pressed { background: #e0e0e0; border-color: #999; transform: scale(0.93); box-shadow: none; }
+  .key.wide { width: auto; padding: 0 7px; font-size: 13px; }
+  .key .katex { font-size: 0.78em; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 10px 20px 24px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+  .check-btn.incorrect { background: #e53935; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 20px; bottom: 24px;
+    width: 38px; height: 38px; background: #2ecc40; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 18px; height: 18px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">✕</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">⚡</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      The pink car moves at a constant velocity of 2 m/s, starting 6 m ahead. The blue car accelerates from rest and catches up after 6 seconds.
+    </div>
+
+    <div class="graph-container">
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="plot-clip">
+            <rect x="45" y="10" width="280" height="250" />
+          </clipPath>
+        </defs>
+
+        <g stroke="#e8e8e8" stroke-width="0.5">
+          <line x1="45" y1="60" x2="325" y2="60"/>
+          <line x1="45" y1="110" x2="325" y2="110"/>
+          <line x1="45" y1="160" x2="325" y2="160"/>
+          <line x1="45" y1="210" x2="325" y2="210"/>
+          <line x1="90" y1="10" x2="90" y2="260"/>
+          <line x1="135" y1="10" x2="135" y2="260"/>
+          <line x1="180" y1="10" x2="180" y2="260"/>
+          <line x1="225" y1="10" x2="225" y2="260"/>
+          <line x1="270" y1="10" x2="270" y2="260"/>
+          <line x1="315" y1="10" x2="315" y2="260"/>
+        </g>
+
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="265" x2="45" y2="5" stroke="#888" stroke-width="1.5"/>
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <text x="330" y="278" font-size="11" fill="#888" text-anchor="end">t (s)</text>
+        <text x="30" y="15" font-size="11" fill="#888" text-anchor="middle">y (m)</text>
+
+        <text x="45" y="278" font-size="10" fill="#999" text-anchor="middle">0</text>
+        <text x="90" y="278" font-size="10" fill="#999" text-anchor="middle">1</text>
+        <text x="135" y="278" font-size="10" fill="#999" text-anchor="middle">2</text>
+        <text x="180" y="278" font-size="10" fill="#999" text-anchor="middle">3</text>
+        <text x="225" y="278" font-size="10" fill="#999" text-anchor="middle">4</text>
+        <text x="270" y="278" font-size="10" fill="#999" text-anchor="middle">5</text>
+        <text x="315" y="278" font-size="10" fill="#999" text-anchor="middle">6</text>
+
+        <text x="38" y="264" font-size="10" fill="#999" text-anchor="end">0</text>
+        <text x="38" y="214" font-size="10" fill="#999" text-anchor="end">5</text>
+        <text x="38" y="164" font-size="10" fill="#999" text-anchor="end">10</text>
+        <text x="38" y="114" font-size="10" fill="#999" text-anchor="end">15</text>
+        <text x="38" y="64" font-size="10" fill="#999" text-anchor="end">20</text>
+
+        <g clip-path="url(#plot-clip)">
+          <!-- User's WRONG predictions (dashed) -->
+          <path id="pink-prediction" d="" stroke="#e91e8c" stroke-width="2" fill="none"
+                stroke-dasharray="8,6" opacity="0"/>
+          <path id="blue-prediction" d="" stroke="#2196f3" stroke-width="2" fill="none"
+                stroke-dasharray="8,6" opacity="0"/>
+
+          <!-- Actual paths (solid, drawn by cars) -->
+          <path id="pink-actual" d="" stroke="#e91e8c" stroke-width="2.5" fill="none" opacity="0"/>
+          <path id="blue-actual" d="" stroke="#2196f3" stroke-width="2.5" fill="none" opacity="0"/>
+        </g>
+
+        <circle id="pink-dot" cx="45" cy="192" r="5" fill="#e91e8c"/>
+        <circle id="blue-dot" cx="45" cy="260" r="5" fill="#2196f3"/>
+
+        <g id="pink-car" transform="translate(1, 178)">
+          <rect x="0" y="0" width="28" height="14" rx="3" fill="#e91e8c"/>
+          <rect x="4" y="-6" width="14" height="8" rx="2" fill="#f48fb1"/>
+          <circle cx="6" cy="16" r="3.5" fill="#333"/>
+          <circle cx="22" cy="16" r="3.5" fill="#333"/>
+          <circle cx="6" cy="16" r="1.5" fill="#666"/>
+          <circle cx="22" cy="16" r="1.5" fill="#666"/>
+        </g>
+
+        <g id="blue-car" transform="translate(1, 246)">
+          <rect x="0" y="0" width="28" height="14" rx="3" fill="#2196f3"/>
+          <rect x="4" y="-6" width="14" height="8" rx="2" fill="#90caf9"/>
+          <circle cx="6" cy="16" r="3.5" fill="#333"/>
+          <circle cx="22" cy="16" r="3.5" fill="#333"/>
+          <circle cx="6" cy="16" r="1.5" fill="#666"/>
+          <circle cx="22" cy="16" r="1.5" fill="#666"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="equations">
+      <div class="eq-row">
+        <span class="eq-label pink" id="eq-pink-label"></span>
+        <div class="slot" id="slot-pink"></div>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label blue" id="eq-blue-label"></span>
+        <div class="slot" id="slot-blue"></div>
+      </div>
+    </div>
+
+    <div class="keyboard-area">
+      <div class="keyboard-row">
+        <div class="key" data-val="1">1</div>
+        <div class="key" data-val="2">2</div>
+        <div class="key" data-val="3">3</div>
+        <div class="key" data-val="4">4</div>
+        <div class="key" data-val="5">5</div>
+        <div class="key" data-val=".">.</div>
+        <div class="key" data-val="+">+</div>
+        <div class="key" data-val="*">×</div>
+        <div class="key" data-val="/">÷</div>
+      </div>
+      <div class="keyboard-row">
+        <div class="key" data-val="6">6</div>
+        <div class="key" data-val="7">7</div>
+        <div class="key" data-val="8">8</div>
+        <div class="key" data-val="9">9</div>
+        <div class="key" data-val="0">0</div>
+        <div class="key wide" data-val="^" id="key-exp"></div>
+        <div class="key wide" data-val="t" id="key-t"></div>
+        <div class="key wide" data-val="backspace">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+const GRAPH = { xMin: 45, xMax: 325, yMin: 260, yMax: 10, tMax: 6.2, yValMax: 22 };
+
+function tToX(t) { return GRAPH.xMin + (t / GRAPH.tMax) * (GRAPH.xMax - GRAPH.xMin); }
+function yToSvgY(y) { return GRAPH.yMin - (y / GRAPH.yValMax) * (GRAPH.yMin - GRAPH.yMax); }
+
+// ACTUAL functions (what the cars do)
+function pinkY(t) { return 2 * t + 6; }
+function blueY(t) { return 0.5 * t * t; }
+
+// WRONG predictions (what the user enters)
+// Pink: user enters 3t + 6 (wrong velocity — too fast)
+function pinkWrongY(t) { return 3 * t + 6; }
+// Blue: user enters t^2 (forgot the 0.5 — too fast)
+function blueWrongY(t) { return t * t; }
+
+function buildPath(fn, tStart, tEnd, steps) {
+  let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const x = tToX(t);
+    const y = yToSvgY(fn(t));
+    d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+  }
+  return d;
+}
+
+function buildPartialPath(fn, tStart, tEnd, steps) {
+  let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const y = fn(t);
+    if (y > GRAPH.yValMax + 1) break;
+    const x = tToX(t);
+    const sy = yToSvgY(y);
+    d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + sy.toFixed(1);
+  }
+  return d;
+}
+
+function positionCar(carId, dotId, fn, t) {
+  const x = tToX(t);
+  const yVal = fn(t);
+  const sy = yToSvgY(yVal);
+  document.getElementById(dotId).setAttribute('cx', x);
+  document.getElementById(dotId).setAttribute('cy', sy);
+  document.getElementById(carId).setAttribute('transform',
+    `translate(${GRAPH.xMin - 30 - 14}, ${sy - 14})`);
+}
+
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+// Wrong typing sequences
+const PINK_SEQUENCE = ['3', '*', 't', '+', '6'];       // 3t + 6 (wrong!)
+const BLUE_SEQUENCE = ['t', '^', '2'];                  // t² (wrong!)
+
+function tokensToLatex(toks) {
+  let result = '';
+  let i = 0;
+  while (i < toks.length) {
+    if (toks[i] === '^') {
+      result += '^{';
+      i++;
+      while (i < toks.length) { result += toks[i] === 't' ? 't' : toks[i]; i++; }
+      result += '}';
+    } else if (toks[i] === '*') {
+      i++;
+    } else if (toks[i] === '+') {
+      result += ' + ';
+      i++;
+    } else if (toks[i] === 't') {
+      result += 't';
+      i++;
+    } else {
+      result += toks[i];
+      i++;
+    }
+  }
+  return result;
+}
+
+let animRunning = false;
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function typeIntoSlot(slotEl, sequence, predictionEl, predictionFn) {
+  const typed = [];
+  for (const token of sequence) {
+    await sleep(350);
+    typed.push(token);
+    const keyEl = document.querySelector(`.key[data-val="${token}"]`);
+    if (keyEl) {
+      keyEl.classList.add('pressed');
+      setTimeout(() => keyEl.classList.remove('pressed'), 150);
+    }
+    slotEl.classList.add('filled');
+    renderLatex(slotEl, tokensToLatex([...typed]));
+    if (typed.length >= 2) {
+      predictionEl.setAttribute('d', buildPartialPath(predictionFn, 0, GRAPH.tMax, 100));
+      predictionEl.setAttribute('opacity', '0.6');
+    }
+  }
+}
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+
+  const pinkPredict = document.getElementById('pink-prediction');
+  const pinkActual = document.getElementById('pink-actual');
+  const bluePredict = document.getElementById('blue-prediction');
+  const blueActual = document.getElementById('blue-actual');
+  const slotPink = document.getElementById('slot-pink');
+  const slotBlue = document.getElementById('slot-blue');
+  const checkBtn = document.getElementById('check-btn');
+
+  // Reset
+  [pinkPredict, pinkActual, bluePredict, blueActual].forEach(el => {
+    el.setAttribute('d', '');
+    el.setAttribute('opacity', '0');
+  });
+
+  slotPink.classList.remove('filled', 'active', 'wrong');
+  slotPink.innerHTML = '';
+  slotBlue.classList.remove('filled', 'active', 'wrong');
+  slotBlue.innerHTML = '';
+  checkBtn.classList.remove('ready', 'incorrect');
+  checkBtn.textContent = 'Check';
+  checkBtn.style.transform = '';
+
+  positionCar('pink-car', 'pink-dot', pinkY, 0);
+  positionCar('blue-car', 'blue-dot', blueY, 0);
+
+  renderLatex(document.getElementById('eq-pink-label'), 'y_p =');
+  renderLatex(document.getElementById('eq-blue-label'), 'y_b =');
+
+  await sleep(1200);
+
+  // Type WRONG pink equation: 3t + 6
+  showLabel('Entering pink prediction...');
+  slotPink.classList.add('active');
+  await typeIntoSlot(slotPink, PINK_SEQUENCE, pinkPredict, pinkWrongY);
+  await sleep(500);
+  slotPink.classList.remove('active');
+  slotPink.classList.add('filled');
+
+  await sleep(400);
+
+  // Type WRONG blue equation: t²
+  showLabel('Entering blue prediction...');
+  slotBlue.classList.add('active');
+  await typeIntoSlot(slotBlue, BLUE_SEQUENCE, bluePredict, blueWrongY);
+  await sleep(600);
+  slotBlue.classList.remove('active');
+  slotBlue.classList.add('filled');
+  checkBtn.classList.add('ready');
+
+  // Press Check
+  await sleep(1500);
+  showLabel('Submitting answer...');
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  // Animate the cars along ACTUAL paths — diverging from dashed predictions
+  await sleep(500);
+  showLabel('Cars don\'t match predictions!');
+
+  const ANIM_DURATION = 3000;
+  const ANIM_T_MAX = 6;
+  const startTime = performance.now();
+
+  pinkActual.setAttribute('opacity', '1');
+  blueActual.setAttribute('opacity', '1');
+
+  function animFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / ANIM_DURATION, 1);
+    const currentT = progress * ANIM_T_MAX;
+    const stepsDrawn = Math.floor(progress * 100);
+
+    positionCar('pink-car', 'pink-dot', pinkY, currentT);
+    positionCar('blue-car', 'blue-dot', blueY, currentT);
+
+    pinkActual.setAttribute('d', buildPath(pinkY, 0, currentT, stepsDrawn));
+    blueActual.setAttribute('d', buildPath(blueY, 0, currentT, stepsDrawn));
+
+    if (progress < 1) {
+      requestAnimationFrame(animFrame);
+    } else {
+      // Mark as incorrect
+      checkBtn.classList.remove('ready');
+      checkBtn.classList.add('incorrect');
+      checkBtn.textContent = 'Incorrect';
+      slotPink.classList.add('wrong');
+      slotBlue.classList.add('wrong');
+      animRunning = false;
+    }
+  }
+
+  requestAnimationFrame(animFrame);
+}
+
+function init() {
+  renderLatex(document.getElementById('key-exp'), '\\square^\\square');
+  renderLatex(document.getElementById('key-t'), 't');
+  renderLatex(document.getElementById('eq-pink-label'), 'y_p =');
+  renderLatex(document.getElementById('eq-blue-label'), 'y_b =');
+
+  positionCar('pink-car', 'pink-dot', pinkY, 0);
+  positionCar('blue-car', 'blue-dot', blueY, 0);
+}
+
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+init();
+setTimeout(animate, 800);
+</script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathBuilder Mockup — NY Density per m²</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    padding: 16px 18px 12px;
+    gap: 12px;
+  }
+
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; cursor: pointer; line-height: 1; }
+
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 75%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+
+  .page-dots { display: flex; gap: 5px; align-items: center; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 24px; display: flex; flex-direction: column; }
+
+  .spacer-top { height: 24px; }
+
+  .given-text { font-size: 16px; line-height: 1.55; color: #1a1a1a; margin-bottom: 8px; }
+  .prompt-text { font-size: 16px; line-height: 1.55; color: #1a1a1a; margin-bottom: 20px; }
+
+  /* Interactive box */
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 22px 16px;
+    margin-bottom: 12px;
+  }
+
+  .eq-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .eq-line:last-child { margin-bottom: 0; }
+
+  .eq-line .katex { font-size: 1.0em; }
+
+  .fraction-with-slot {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .frac-bar {
+    width: 100%;
+    height: 1.5px;
+    background: #1a1a1a;
+    min-width: 50px;
+  }
+
+  .frac-num, .frac-den {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px 4px;
+  }
+
+  .slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    height: 30px;
+    padding: 0 8px;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .slot:hover { border-color: #aaa; }
+  .slot.active { border-color: #888; background: #f5f5f5; }
+  .slot.filled { border-color: #bbb; background: #f5f5f5; color: #1a1a1a; }
+  .slot .katex { font-size: 0.85em; }
+
+  /* Spanny keyboard */
+  .keyboard-area {
+    background: #f7f8fa;
+    border-top: 1px solid #e8e8e8;
+    padding: 12px 12px 8px;
+  }
+
+  .keyboard-row { display: flex; gap: 6px; margin-bottom: 6px; justify-content: center; }
+  .keyboard-row:last-child { margin-bottom: 0; }
+
+  .key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background: #fff;
+    border: 1.5px solid #d4d7e0;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 500;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.08s;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  .key:hover { border-color: #999; background: #f5f5f5; }
+  .key:active { background: #eee; transform: scale(0.96); }
+
+  .key.wide { width: auto; padding: 0 10px; font-size: 14px; }
+  .key.backspace { width: 52px; background: #f0f0f0; border-color: #d0d0d0; }
+  .key.backspace:hover { background: #e8e8e8; }
+  .key .katex { font-size: 0.85em; }
+
+  .start-over {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; color: #aaa; font-size: 14px; cursor: pointer; padding: 12px 0;
+  }
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+
+  .check-btn {
+    width: 100%; height: 48px; border-radius: 24px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 24px; bottom: 28px;
+    width: 40px; height: 40px; background: #2ecc40; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">✕</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+    </div>
+    <div class="bolt">⚡</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="given-text" id="given"></div>
+
+    <div class="prompt-text">
+      How many people live in New York per square metre?
+    </div>
+
+    <!-- Interactive box -->
+    <div class="interactive-box">
+      <!-- Line 1: 10,000/km^2 = 10,000 / [▢] · m^2 -->
+      <div class="eq-line">
+        <span id="r1-lhs"></span>
+        <span id="eq1"></span>
+        <div class="fraction-with-slot">
+          <div class="frac-num"><span id="r1-num"></span></div>
+          <div class="frac-bar"></div>
+          <div class="frac-den">
+            <div class="slot active" id="slot-1"></div>
+            <span id="r1-den-unit"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line 2: = [▢] /m^2 -->
+      <div class="eq-line">
+        <span id="eq2"></span>
+        <div class="slot" id="slot-2"></div>
+        <span id="r2-unit"></span>
+      </div>
+    </div>
+
+    <!-- Spanny keyboard -->
+    <div class="keyboard-area">
+      <div class="keyboard-row">
+        <div class="key" data-val="0">0</div>
+        <div class="key" data-val="1">1</div>
+        <div class="key" data-val="2">2</div>
+        <div class="key" data-val="3">3</div>
+        <div class="key" data-val="4">4</div>
+        <div class="key" data-val=".">.</div>
+        <div class="key" data-val="*">×</div>
+      </div>
+      <div class="keyboard-row">
+        <div class="key" data-val="5">5</div>
+        <div class="key" data-val="6">6</div>
+        <div class="key" data-val="7">7</div>
+        <div class="key" data-val="8">8</div>
+        <div class="key" data-val="9">9</div>
+        <div class="key wide" data-val="(-)" id="key-neg"></div>
+        <div class="key wide" data-val="^" id="key-exp"></div>
+        <div class="key backspace" data-val="backspace">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+const slotState = {
+  'slot-1': { tokens: [] },
+  'slot-2': { tokens: [] },
+};
+
+let activeSlotId = 'slot-1';
+
+function initStatic() {
+  renderLatex(document.getElementById('given'), '1 \\text{ km}^2 = 10^6 \\text{ m}^2');
+  renderLatex(document.getElementById('r1-lhs'), '\\dfrac{10{,}000}{\\text{km}^2}');
+  renderLatex(document.getElementById('eq1'), '=');
+  renderLatex(document.getElementById('r1-num'), '10{,}000');
+  renderLatex(document.getElementById('r1-den-unit'), '\\cdot \\text{m}^2');
+  renderLatex(document.getElementById('eq2'), '=');
+  renderLatex(document.getElementById('r2-unit'), '/ \\text{m}^2');
+  renderLatex(document.getElementById('key-exp'), '\\square^\\square');
+  renderLatex(document.getElementById('key-neg'), '(-)');
+}
+
+function init() {
+  initStatic();
+  Object.keys(slotState).forEach(id => {
+    slotState[id] = { tokens: [] };
+    const el = document.getElementById(id);
+    el.classList.remove('filled', 'active');
+    el.innerHTML = '';
+  });
+  activeSlotId = 'slot-1';
+  selectSlot('slot-1');
+  document.getElementById('check-btn').classList.remove('ready');
+}
+
+function selectSlot(id) {
+  activeSlotId = id;
+  document.querySelectorAll('.slot').forEach(s => {
+    s.classList.remove('active');
+    if (s.id === id) s.classList.add('active');
+  });
+}
+
+function tokensToLatex(tokens) {
+  if (tokens.length === 0) return '';
+  let result = '';
+  let i = 0;
+  let inExponent = false;
+  while (i < tokens.length) {
+    const t = tokens[i];
+    if (t === '^') {
+      result += '^{';
+      inExponent = true;
+      i++;
+      if (i >= tokens.length) result += '\\square';
+    } else if (t === '(-)') {
+      result += '-';
+      i++;
+    } else if (t === '*') {
+      result += ' \\times ';
+      i++;
+    } else {
+      result += t;
+      i++;
+    }
+  }
+  if (inExponent) result += '}';
+  return result;
+}
+
+function updateSlot(id) {
+  const s = slotState[id];
+  const el = document.getElementById(id);
+  if (s.tokens.length > 0) {
+    el.classList.add('filled');
+    renderLatex(el, tokensToLatex(s.tokens));
+  } else {
+    el.classList.remove('filled');
+    el.innerHTML = '';
+  }
+  checkReady();
+}
+
+function checkReady() {
+  const allFilled = Object.values(slotState).every(s => s.tokens.length > 0);
+  document.getElementById('check-btn').classList.toggle('ready', allFilled);
+}
+
+document.querySelectorAll('.slot').forEach(el => {
+  el.addEventListener('click', () => selectSlot(el.id));
+});
+
+document.querySelectorAll('.key').forEach(key => {
+  key.addEventListener('click', () => {
+    if (!activeSlotId) return;
+    const val = key.dataset.val;
+    const s = slotState[activeSlotId];
+
+    if (val === 'backspace') {
+      if (s.tokens.length > 0) s.tokens.pop();
+    } else {
+      s.tokens.push(val);
+    }
+
+    updateSlot(activeSlotId);
+  });
+});
+
+document.getElementById('start-over').addEventListener('click', init);
+
+init();
+</script>
+</body>
+</html>

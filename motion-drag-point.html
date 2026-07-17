@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drag Point Motion Mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 45%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a; margin-bottom: 12px; margin-top: 10px;
+  }
+
+  /* Graph */
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.15;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .graph-container svg { width: 100%; height: 100%; }
+
+  /* Info below graph */
+  .equations {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .eq-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .eq-label { color: #1a1a1a; }
+  .eq-label.blue { color: #2196f3; }
+
+  .instruction-text {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.4;
+  }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 10px 20px 24px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+  .check-btn.correct { background: #27ae60; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 20px; bottom: 24px;
+    width: 38px; height: 38px; background: #2ecc40; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 18px; height: 18px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+
+  /* Correct indicator */
+  .correct-badge {
+    position: absolute;
+    background: #27ae60;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 14px;
+    opacity: 0;
+    transition: opacity 0.4s;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .correct-badge.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&#x2715;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#x26A1;</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      A car starts at position 2 m and travels at 4 m/s. Where will it be after 3 seconds?
+    </div>
+
+    <div class="graph-container">
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="plot-clip">
+            <rect x="45" y="10" width="280" height="250" />
+          </clipPath>
+          <filter id="point-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#2196f3" flood-opacity="0.4"/>
+          </filter>
+          <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#27ae60" flood-opacity="0.7"/>
+          </filter>
+        </defs>
+
+        <!-- Grid lines -->
+        <g stroke="#e8e8e8" stroke-width="0.5">
+          <!-- Horizontal: y = 5, 10, 15, 20 -->
+          <line x1="45" y1="203.2" x2="325" y2="203.2"/>
+          <line x1="45" y1="146.4" x2="325" y2="146.4"/>
+          <line x1="45" y1="89.5" x2="325" y2="89.5"/>
+          <line x1="45" y1="32.7" x2="325" y2="32.7"/>
+          <!-- Vertical: t = 1, 2, 3, 4, 5 -->
+          <line x1="95.9" y1="10" x2="95.9" y2="260"/>
+          <line x1="146.8" y1="10" x2="146.8" y2="260"/>
+          <line x1="197.7" y1="10" x2="197.7" y2="260"/>
+          <line x1="248.6" y1="10" x2="248.6" y2="260"/>
+          <line x1="299.5" y1="10" x2="299.5" y2="260"/>
+        </g>
+
+        <!-- Axes -->
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="265" x2="45" y2="5" stroke="#888" stroke-width="1.5"/>
+        <!-- Arrow heads -->
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <!-- Axis labels -->
+        <text x="330" y="278" font-size="11" fill="#888" text-anchor="end">t (s)</text>
+        <text x="18" y="15" font-size="11" fill="#888" text-anchor="middle">y (m)</text>
+
+        <!-- Tick labels - t axis -->
+        <text x="45" y="278" font-size="10" fill="#999" text-anchor="middle">0</text>
+        <text x="95.9" y="278" font-size="10" fill="#999" text-anchor="middle">1</text>
+        <text x="146.8" y="278" font-size="10" fill="#999" text-anchor="middle">2</text>
+        <text x="197.7" y="278" font-size="10" fill="#999" text-anchor="middle">3</text>
+        <text x="248.6" y="278" font-size="10" fill="#999" text-anchor="middle">4</text>
+        <text x="299.5" y="278" font-size="10" fill="#999" text-anchor="middle">5</text>
+
+        <!-- Tick labels - y axis -->
+        <text x="38" y="264" font-size="10" fill="#999" text-anchor="end">0</text>
+        <text x="38" y="207" font-size="10" fill="#999" text-anchor="end">5</text>
+        <text x="38" y="150" font-size="10" fill="#999" text-anchor="end">10</text>
+        <text x="38" y="93" font-size="10" fill="#999" text-anchor="end">15</text>
+        <text x="38" y="36" font-size="10" fill="#999" text-anchor="end">20</text>
+
+        <!-- Dashed vertical line at t=3 -->
+        <line id="target-line" x1="197.7" y1="10" x2="197.7" y2="260"
+              stroke="#333" stroke-width="1" stroke-dasharray="6,4" opacity="0.35"/>
+
+        <!-- Plot area (clipped) -->
+        <g clip-path="url(#plot-clip)">
+          <!-- Blue actual path (solid, drawn on animation) -->
+          <path id="blue-actual" d="" stroke="#2196f3" stroke-width="2.5" fill="none" opacity="0"/>
+        </g>
+
+        <!-- Starting position marker on y-axis: y=2 -->
+        <circle id="start-dot" cx="45" cy="237.3" r="4.5" fill="#2196f3"/>
+
+        <!-- Car SVG (positioned left of y-axis, moves vertically) -->
+        <g id="car" transform="translate(1, 223.3)">
+          <rect x="0" y="0" width="28" height="14" rx="3" fill="#2196f3"/>
+          <rect x="4" y="-6" width="14" height="8" rx="2" fill="#90caf9"/>
+          <circle cx="6" cy="16" r="3.5" fill="#333"/>
+          <circle cx="22" cy="16" r="3.5" fill="#333"/>
+          <circle cx="6" cy="16" r="1.5" fill="#666"/>
+          <circle cx="22" cy="16" r="1.5" fill="#666"/>
+        </g>
+
+        <!-- Horizontal dashed guide from point to y-axis -->
+        <line id="h-guide" x1="45" y1="169.1" x2="197.7" y2="169.1"
+              stroke="#2196f3" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+
+        <!-- Dragging dot on the curve (traces during animation) -->
+        <circle id="trace-dot" cx="45" cy="237.3" r="4.5" fill="#2196f3" opacity="0"/>
+
+        <!-- Draggable point -->
+        <circle id="drag-point" cx="197.7" cy="169.1" r="10"
+                fill="#2196f3" stroke="#fff" stroke-width="2.5"
+                filter="url(#point-shadow)" cursor="grab" style="transition: filter 0.3s;"/>
+
+        <!-- Y-value label near point -->
+        <g id="y-label-group" transform="translate(210, 165)">
+          <rect x="0" y="-10" width="32" height="20" rx="4" fill="rgba(33,150,243,0.12)"/>
+          <text id="y-label" x="16" y="4" font-size="12" font-weight="600" fill="#2196f3"
+                text-anchor="middle">8</text>
+        </g>
+
+        <!-- Correct badge (green checkmark) -->
+        <g id="correct-indicator" opacity="0">
+          <circle cx="197.7" cy="100.9" r="16" fill="none" stroke="#27ae60" stroke-width="2.5" opacity="0.5"/>
+        </g>
+      </svg>
+
+      <!-- Correct text badge -->
+      <div class="correct-badge" id="correct-badge" style="top: 10px; left: 50%; transform: translateX(-50%);">
+        &#x2714; Correct!
+      </div>
+    </div>
+
+    <!-- Info below graph -->
+    <div class="equations">
+      <div class="eq-row">
+        <span class="eq-label blue" id="eq-line"></span>
+      </div>
+      <div class="eq-row">
+        <span class="instruction-text" id="instruction">Drag the point to predict position at t = 3.</span>
+      </div>
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+// Coordinate transforms
+const GRAPH = { xMin: 45, xMax: 325, yMin: 260, yMax: 10, tMax: 5.5, yValMax: 22 };
+
+function tToX(t) { return GRAPH.xMin + (t / GRAPH.tMax) * (GRAPH.xMax - GRAPH.xMin); }
+function yToSvgY(y) { return GRAPH.yMin - (y / GRAPH.yValMax) * (GRAPH.yMin - GRAPH.yMax); }
+function svgYToVal(sy) { return (GRAPH.yMin - sy) / (GRAPH.yMin - GRAPH.yMax) * GRAPH.yValMax; }
+
+// Motion function: y = 4t + 2
+function motionY(t) { return 4 * t + 2; }
+
+// Build SVG path for the motion line from tStart to tEnd
+function buildPath(fn, tStart, tEnd, steps) {
+  let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const x = tToX(t);
+    const y = yToSvgY(fn(t));
+    d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+  }
+  return d;
+}
+
+// Position car on y-axis (left side, moves vertically)
+function positionCar(yVal) {
+  const sy = yToSvgY(yVal);
+  document.getElementById('car').setAttribute('transform', `translate(1, ${sy - 14})`);
+}
+
+// Position the draggable point and its associated guides
+function positionDragPoint(yVal) {
+  const px = tToX(3);
+  const sy = yToSvgY(yVal);
+
+  // Point
+  document.getElementById('drag-point').setAttribute('cy', sy);
+
+  // Horizontal guide
+  const hGuide = document.getElementById('h-guide');
+  hGuide.setAttribute('y1', sy);
+  hGuide.setAttribute('y2', sy);
+
+  // Y-value label
+  const rounded = Math.round(yVal);
+  document.getElementById('y-label').textContent = rounded;
+  document.getElementById('y-label-group').setAttribute('transform',
+    `translate(${px + 14}, ${sy - 4})`);
+}
+
+// Show stage label
+function showLabel(text, duration) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  if (duration) {
+    setTimeout(() => el.classList.remove('visible'), duration);
+  }
+}
+
+function hideLabel() {
+  document.getElementById('stage-label').classList.remove('visible');
+}
+
+let animRunning = false;
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Easing: ease in-out cubic
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// Animate a value from start to end over duration ms, calling callback each frame
+function animateValue(startVal, endVal, duration, callback) {
+  return new Promise(resolve => {
+    const startTime = performance.now();
+    function frame(now) {
+      const elapsed = now - startTime;
+      const rawProgress = Math.min(elapsed / duration, 1);
+      const progress = easeInOutCubic(rawProgress);
+      const current = startVal + (endVal - startVal) * progress;
+      callback(current, rawProgress);
+      if (rawProgress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+
+  // Reset everything
+  const blueActual = document.getElementById('blue-actual');
+  const checkBtn = document.getElementById('check-btn');
+  const dragPoint = document.getElementById('drag-point');
+  const traceDot = document.getElementById('trace-dot');
+  const correctIndicator = document.getElementById('correct-indicator');
+  const correctBadge = document.getElementById('correct-badge');
+  const instruction = document.getElementById('instruction');
+
+  blueActual.setAttribute('opacity', '0');
+  blueActual.setAttribute('d', '');
+  checkBtn.classList.remove('ready', 'correct');
+  checkBtn.textContent = 'Check';
+  checkBtn.style.transform = '';
+  dragPoint.setAttribute('filter', 'url(#point-shadow)');
+  dragPoint.setAttribute('fill', '#2196f3');
+  dragPoint.setAttribute('r', '10');
+  traceDot.setAttribute('opacity', '0');
+  correctIndicator.setAttribute('opacity', '0');
+  correctBadge.classList.remove('visible');
+  instruction.textContent = 'Drag the point to predict position at t = 3.';
+
+  // Initial positions
+  positionCar(2); // car at y=2
+  positionDragPoint(8); // point starts at y=8 (wrong)
+
+  // Render equation
+  renderLatex(document.getElementById('eq-line'), 'y = 4t + 2');
+
+  await sleep(1200);
+
+  // === STAGE 1: Animate point sliding from y=8 to y=14 ===
+  showLabel('Placing prediction...', 2500);
+
+  await animateValue(8, 14, 1800, (val) => {
+    positionDragPoint(val);
+  });
+
+  await sleep(600);
+
+  // === STAGE 2: Check button activates ===
+  checkBtn.classList.add('ready');
+  hideLabel();
+  await sleep(1500);
+
+  // === STAGE 3: Press Check ===
+  showLabel('Submitting...', 1500);
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+  await sleep(800);
+  hideLabel();
+
+  // === STAGE 4: Draw the actual motion line and animate car ===
+  await sleep(400);
+  showLabel('Animation playing...', 3500);
+
+  blueActual.setAttribute('opacity', '1');
+  traceDot.setAttribute('opacity', '1');
+
+  const ANIM_DURATION = 3000;
+  const ANIM_T_MAX = 3; // Animate up to t=3
+
+  await animateValue(0, 1, ANIM_DURATION, (_, rawProgress) => {
+    const currentT = rawProgress * ANIM_T_MAX;
+    const currentY = motionY(currentT);
+
+    // Draw blue path up to current t
+    blueActual.setAttribute('d', buildPath(motionY, 0, currentT, Math.max(2, Math.floor(rawProgress * 80))));
+
+    // Move car along y-axis
+    positionCar(currentY);
+
+    // Trace dot along the curve
+    traceDot.setAttribute('cx', tToX(currentT).toFixed(1));
+    traceDot.setAttribute('cy', yToSvgY(currentY).toFixed(1));
+  });
+
+  // === STAGE 5: Arrival - car at y=14, matches the point ===
+  await sleep(300);
+  hideLabel();
+
+  // Green pulse on the point
+  dragPoint.setAttribute('filter', 'url(#glow-green)');
+  dragPoint.setAttribute('fill', '#27ae60');
+
+  // Pulse animation
+  let pulseCount = 0;
+  const pulseInterval = setInterval(() => {
+    const r = pulseCount % 2 === 0 ? 13 : 10;
+    dragPoint.setAttribute('r', r);
+    pulseCount++;
+    if (pulseCount >= 6) {
+      clearInterval(pulseInterval);
+      dragPoint.setAttribute('r', '10');
+    }
+  }, 200);
+
+  // Green ring around correct indicator
+  correctIndicator.setAttribute('opacity', '1');
+  const ring = correctIndicator.querySelector('circle');
+  ring.setAttribute('cy', yToSvgY(14).toFixed(1));
+
+  // Show correct badge
+  correctBadge.classList.add('visible');
+
+  // Update check button
+  checkBtn.classList.remove('ready');
+  checkBtn.classList.add('correct');
+  checkBtn.textContent = 'Correct!';
+
+  // Update instruction
+  instruction.textContent = 'The car reaches 14 m at t = 3 s.';
+
+  await sleep(2000);
+  animRunning = false;
+}
+
+// Init
+function init() {
+  renderLatex(document.getElementById('eq-line'), 'y = 4t + 2');
+  positionCar(2);
+  positionDragPoint(8);
+}
+
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+init();
+setTimeout(animate, 800);
+</script>
+</body>
+</html>

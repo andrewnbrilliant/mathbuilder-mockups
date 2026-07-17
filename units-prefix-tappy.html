@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathBuilder Mockup — Unit Prefix Tappy</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 750px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    padding: 16px 18px 12px;
+    gap: 12px;
+  }
+
+  .close-btn {
+    font-size: 18px;
+    color: #1a1a1a;
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: #e8e8e8;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    width: 55%;
+    height: 100%;
+    background: #c5cc3c;
+    border-radius: 3px;
+  }
+
+  .page-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .page-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #d4d4d4;
+  }
+
+  .page-dot.active { background: #9a9a9a; }
+
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content {
+    flex: 1;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .spacer-top { height: 40px; }
+
+  .prompt-text {
+    font-size: 16px;
+    line-height: 1.55;
+    color: #1a1a1a;
+    margin-bottom: 24px;
+  }
+
+  /* Interactive box */
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 28px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .interactive-box .katex { font-size: 1.1em; }
+
+  .slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .slot:hover { border-color: #aaa; }
+
+  .slot.active {
+    border-color: #888;
+    background: #f5f5f5;
+  }
+
+  .slot.filled {
+    border-color: #bbb;
+    background: #f5f5f5;
+    color: #1a1a1a;
+  }
+
+  .slot .katex { font-size: 0.95em; }
+
+  /* Tile bank */
+  .bank-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 4px;
+    margin-bottom: 20px;
+  }
+
+  .tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 36px;
+    padding: 0 10px;
+    background: #fff;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+  }
+
+  .tile:hover { border-color: #999; }
+  .tile:active { background: #f5f5f5; }
+
+  .tile.used {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .tile .katex { font-size: 0.95em; }
+
+  .start-over {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }
+
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .check-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: 24px;
+    border: none;
+    background: #f0f0f0;
+    color: #bbb;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .check-btn.ready {
+    background: #1a1a1a;
+    color: #fff;
+  }
+
+  .tutor-icon {
+    position: absolute;
+    left: 24px;
+    bottom: 28px;
+    width: 40px;
+    height: 40px;
+    background: #2ecc40;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">✕</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">⚡</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="prompt-text">
+      A hydrogen atom has a diameter of 10<sup>−10</sup> m. Express this with a unit prefix.
+    </div>
+
+    <!-- Interactive box -->
+    <div class="interactive-box">
+      <span id="lhs"></span>
+      <span id="eq-sign"></span>
+      <span id="rhs-100"></span>
+      <div class="slot active" id="slot-unit"></div>
+    </div>
+
+    <!-- Tile bank -->
+    <div class="bank-area" id="bank"></div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+const TILES = [
+  { latex: '\\text{pm}' },
+  { latex: '\\text{nm}' },
+  { latex: '\\mu\\text{m}' },
+  { latex: '\\text{mm}' },
+  { latex: '\\text{m}' },
+  { latex: '\\text{km}' },
+  { latex: '\\text{Mm}' },
+  { latex: '\\text{Gm}' },
+  { latex: '\\text{Tm}' },
+];
+
+let filled = false;
+
+function init() {
+  renderLatex(document.getElementById('lhs'), '10^{-10} \\text{ m}');
+  renderLatex(document.getElementById('eq-sign'), '=');
+  renderLatex(document.getElementById('rhs-100'), '100');
+
+  const slot = document.getElementById('slot-unit');
+  slot.classList.remove('filled');
+  slot.classList.add('active');
+  slot.innerHTML = '';
+  filled = false;
+
+  const bank = document.getElementById('bank');
+  bank.innerHTML = '';
+  TILES.forEach((t, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.index = i;
+    renderLatex(tile, t.latex);
+    tile.addEventListener('click', () => placeTile(i));
+    bank.appendChild(tile);
+  });
+
+  document.getElementById('check-btn').classList.remove('ready');
+}
+
+function placeTile(tileIndex) {
+  if (filled) return;
+
+  const slot = document.getElementById('slot-unit');
+  const tile = TILES[tileIndex];
+  const tileEl = document.querySelector(`.tile[data-index="${tileIndex}"]`);
+
+  slot.classList.remove('active');
+  slot.classList.add('filled');
+  renderLatex(slot, tile.latex);
+  tileEl.classList.add('used');
+
+  filled = true;
+  document.getElementById('check-btn').classList.add('ready');
+}
+
+document.getElementById('start-over').addEventListener('click', () => {
+  init();
+});
+
+init();
+</script>
+</body>
+</html>

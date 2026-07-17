@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ball Trajectory Mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 60%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a; margin-bottom: 12px; margin-top: 10px;
+  }
+
+  /* Graph */
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.15;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .graph-container svg { width: 100%; height: 100%; }
+
+  /* Input row below graph */
+  .equations {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .eq-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .eq-label { color: #1a1a1a; }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 60px; height: 30px; padding: 0 8px;
+    border: 1.5px solid #d0d0d0; border-radius: 6px;
+    background: #fafafa; transition: all 0.2s;
+  }
+  .slot.active { border-color: #2196f3; background: #f0f5ff; }
+  .slot.filled { border-color: #2196f3; background: #f0f5ff; color: #1a1a1a; }
+  .slot .katex { font-size: 0.9em; }
+
+  /* Keyboard */
+  .keyboard-area {
+    background: #f7f8fa; border-top: 1px solid #e8e8e8;
+    padding: 10px 8px 6px;
+  }
+  .keyboard-row { display: flex; gap: 4px; margin-bottom: 4px; justify-content: center; }
+  .keyboard-row:last-child { margin-bottom: 0; }
+
+  .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 38px;
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 7px;
+    font-size: 16px; font-weight: 500; color: #1a1a1a;
+    transition: all 0.12s; user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .key.pressed { background: #e0e0e0; border-color: #999; transform: scale(0.93); box-shadow: none; }
+  .key.wide { width: auto; padding: 0 7px; font-size: 13px; }
+  .key .katex { font-size: 0.78em; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 10px 20px 24px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 20px; bottom: 24px;
+    width: 38px; height: 38px; background: #2ecc40; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 18px; height: 18px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      A ball starts at a height of 1 metre. It is thrown upwards at 5 m/s but accelerates downwards at 10 m/s&sup2;. Give the time and height when the ball hits the ground.
+    </div>
+
+    <div class="graph-container">
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="plot-clip">
+            <rect x="45" y="10" width="280" height="250" />
+          </clipPath>
+          <radialGradient id="ball-grad" cx="40%" cy="35%" r="55%">
+            <stop offset="0%" stop-color="#ff9800"/>
+            <stop offset="100%" stop-color="#e65100"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Gridlines (light) -->
+        <g stroke="#e8e8e8" stroke-width="0.5">
+          <!-- Horizontal: y=1, y=2, y=3 -->
+          <line x1="45" y1="152.9" x2="325" y2="152.9"/>
+          <line x1="45" y1="81.4" x2="325" y2="81.4"/>
+          <line x1="45" y1="10" x2="325" y2="10"/>
+          <!-- Vertical: t=0.5, 1.0, 1.5 -->
+          <line x1="132.5" y1="10" x2="132.5" y2="260"/>
+          <line x1="220" y1="10" x2="220" y2="260"/>
+          <line x1="307.5" y1="10" x2="307.5" y2="260"/>
+        </g>
+
+        <!-- Ground line at y=0 (thicker/darker than gridlines) -->
+        <line x1="45" y1="224.3" x2="325" y2="224.3" stroke="#aaa" stroke-width="1.2"/>
+        <text x="328" y="228" font-size="9" fill="#aaa" font-style="italic">ground</text>
+
+        <!-- Axes -->
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="265" x2="45" y2="5" stroke="#888" stroke-width="1.5"/>
+        <!-- Arrow heads -->
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <!-- Axis labels -->
+        <text x="320" y="278" font-size="11" fill="#888" text-anchor="end">t (s)</text>
+        <text x="30" y="8" font-size="11" fill="#888" text-anchor="middle">y (m)</text>
+
+        <!-- Tick labels - t axis -->
+        <text x="45" y="278" font-size="10" fill="#999" text-anchor="middle">0</text>
+        <text x="132.5" y="278" font-size="10" fill="#999" text-anchor="middle">0.5</text>
+        <text x="220" y="278" font-size="10" fill="#999" text-anchor="middle">1.0</text>
+        <text x="307.5" y="278" font-size="10" fill="#999" text-anchor="middle">1.5</text>
+
+        <!-- Tick labels - y axis -->
+        <text x="38" y="228" font-size="10" fill="#999" text-anchor="end">0</text>
+        <text x="38" y="157" font-size="10" fill="#999" text-anchor="end">1</text>
+        <text x="38" y="85" font-size="10" fill="#999" text-anchor="end">2</text>
+        <text x="38" y="14" font-size="10" fill="#999" text-anchor="end">3</text>
+
+        <!-- Plot area (clipped) -->
+        <g clip-path="url(#plot-clip)">
+          <!-- Parabolic curve (drawn progressively during animation) -->
+          <path id="curve" d="" stroke="#e65100" stroke-width="2.5" fill="none"/>
+        </g>
+
+        <!-- Marker/crosshair at answer point (positioned by JS) -->
+        <g id="marker" opacity="0">
+          <circle id="marker-circle" r="7" fill="none" stroke="#555" stroke-width="1.5"/>
+          <line id="marker-v" stroke="#555" stroke-width="1.5"/>
+          <line id="marker-h" stroke="#555" stroke-width="1.5"/>
+        </g>
+
+        <!-- Green confirmation ring (hidden until end) -->
+        <circle id="confirm-ring" r="12" fill="none" stroke="#2ecc40" stroke-width="2.5" opacity="0"/>
+
+        <!-- Trace dot on curve -->
+        <circle id="trace-dot" cx="45" cy="152.9" r="5" fill="#e65100"/>
+
+        <!-- Ball on left side of y-axis -->
+        <circle id="ball" cx="20" cy="152.9" r="10" fill="url(#ball-grad)"/>
+      </svg>
+    </div>
+
+    <!-- Input row -->
+    <div class="equations">
+      <div class="eq-row">
+        <span class="eq-label">It hits the ground at&ensp;(&ensp;</span>
+        <div class="slot active" id="slot-t"></div>
+        <span class="eq-label">&ensp;,&ensp;</span>
+        <div class="slot" id="slot-y"></div>
+        <span class="eq-label">&ensp;)</span>
+      </div>
+    </div>
+
+    <!-- Keyboard -->
+    <div class="keyboard-area">
+      <div class="keyboard-row">
+        <div class="key" data-val="0">0</div>
+        <div class="key" data-val="1">1</div>
+        <div class="key" data-val="2">2</div>
+        <div class="key" data-val="3">3</div>
+        <div class="key" data-val="4">4</div>
+        <div class="key" data-val="5">5</div>
+        <div class="key" data-val="6">6</div>
+        <div class="key" data-val="7">7</div>
+      </div>
+      <div class="keyboard-row">
+        <div class="key" data-val="8">8</div>
+        <div class="key" data-val="9">9</div>
+        <div class="key" data-val=".">.</div>
+        <div class="key wide" data-val="-">(&minus;)</div>
+        <div class="key wide" data-val="backspace">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+// === Coordinate system ===
+// t: 0..1.6 -> x: 45..325
+// y: -0.5..3 -> SVG y: 260..10
+const GRAPH = { xMin: 45, xMax: 325, yMin: 260, yMax: 10, tMax: 1.6, yValMax: 3, yValMin: -0.5 };
+
+function tToX(t) {
+  return GRAPH.xMin + (t / GRAPH.tMax) * (GRAPH.xMax - GRAPH.xMin);
+}
+
+function yToSvgY(y) {
+  return GRAPH.yMin - ((y - GRAPH.yValMin) / (GRAPH.yValMax - GRAPH.yValMin)) * (GRAPH.yMin - GRAPH.yMax);
+}
+
+// === Physics ===
+// y(t) = 1 + 5t - 5t^2
+function ballY(t) { return 1 + 5 * t - 5 * t * t; }
+
+// Time when ball hits ground: 5t^2 - 5t - 1 = 0  =>  t = (5 + sqrt(45)) / 10
+const tHit = (5 + Math.sqrt(45)) / 10; // ~1.1708
+
+// === Path building ===
+function buildPath(fn, tStart, tEnd, steps) {
+  let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const x = tToX(t);
+    const y = yToSvgY(fn(t));
+    d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+  }
+  return d;
+}
+
+// === Position ball and dot ===
+function positionBall(t) {
+  const yVal = ballY(t);
+  const sy = yToSvgY(yVal);
+  const sx = tToX(t);
+
+  // Ball stays on the left side, moves vertically
+  document.getElementById('ball').setAttribute('cy', sy);
+
+  // Trace dot follows the curve
+  document.getElementById('trace-dot').setAttribute('cx', sx);
+  document.getElementById('trace-dot').setAttribute('cy', sy);
+}
+
+// === Marker position ===
+function setupMarker() {
+  const mx = tToX(tHit);
+  const my = yToSvgY(0);
+  const r = 7;
+
+  const circle = document.getElementById('marker-circle');
+  circle.setAttribute('cx', mx);
+  circle.setAttribute('cy', my);
+
+  const vLine = document.getElementById('marker-v');
+  vLine.setAttribute('x1', mx);
+  vLine.setAttribute('y1', my - r);
+  vLine.setAttribute('x2', mx);
+  vLine.setAttribute('y2', my + r);
+
+  const hLine = document.getElementById('marker-h');
+  hLine.setAttribute('x1', mx - r);
+  hLine.setAttribute('y1', my);
+  hLine.setAttribute('x2', mx + r);
+  hLine.setAttribute('y2', my);
+
+  // Confirmation ring (same position)
+  const ring = document.getElementById('confirm-ring');
+  ring.setAttribute('cx', mx);
+  ring.setAttribute('cy', my);
+}
+
+// === Stage label ===
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+// === KaTeX helper ===
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+// === Animation ===
+let animRunning = false;
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+
+  // --- Reset all state ---
+  const curve = document.getElementById('curve');
+  const marker = document.getElementById('marker');
+  const confirmRing = document.getElementById('confirm-ring');
+  const slotT = document.getElementById('slot-t');
+  const slotY = document.getElementById('slot-y');
+  const checkBtn = document.getElementById('check-btn');
+  const traceDot = document.getElementById('trace-dot');
+  const ball = document.getElementById('ball');
+
+  curve.setAttribute('d', '');
+  marker.setAttribute('opacity', '0');
+  confirmRing.setAttribute('opacity', '0');
+
+  // Reset marker colors
+  document.getElementById('marker-circle').setAttribute('stroke', '#555');
+  document.getElementById('marker-circle').setAttribute('fill', 'none');
+  document.getElementById('marker-v').setAttribute('stroke', '#555');
+  document.getElementById('marker-h').setAttribute('stroke', '#555');
+
+  slotT.className = 'slot active';
+  slotT.innerHTML = '';
+  slotT.style.borderColor = '';
+  slotT.style.background = '';
+  slotY.className = 'slot';
+  slotY.innerHTML = '';
+  slotY.style.borderColor = '';
+  slotY.style.background = '';
+
+  checkBtn.classList.remove('ready');
+  checkBtn.style.background = '';
+  checkBtn.style.transform = '';
+  checkBtn.textContent = 'Check';
+
+  traceDot.setAttribute('fill', '#e65100');
+  traceDot.setAttribute('r', '5');
+  ball.setAttribute('r', '10');
+
+  positionBall(0);
+  setupMarker();
+
+  await sleep(1200);
+
+  // === STAGE 1: Type the answer ===
+  showLabel('Entering answer...');
+
+  // Type into slot-t: "1", ".", "1", "7"
+  const tSequence = ['1', '.', '1', '7'];
+  let tTyped = '';
+
+  for (const ch of tSequence) {
+    await sleep(350);
+    tTyped += ch;
+
+    // Flash key
+    const keyEl = document.querySelector(`.key[data-val="${ch}"]`);
+    if (keyEl) {
+      keyEl.classList.add('pressed');
+      setTimeout(() => keyEl.classList.remove('pressed'), 150);
+    }
+
+    // Update slot
+    slotT.classList.add('filled');
+    renderLatex(slotT, tTyped);
+  }
+
+  // Switch to slot-y
+  await sleep(500);
+  slotT.classList.remove('active');
+  slotT.classList.add('filled');
+  slotY.classList.add('active');
+
+  // Type into slot-y: "0"
+  await sleep(350);
+  const keyZero = document.querySelector('.key[data-val="0"]');
+  if (keyZero) {
+    keyZero.classList.add('pressed');
+    setTimeout(() => keyZero.classList.remove('pressed'), 150);
+  }
+  slotY.classList.add('filled');
+  renderLatex(slotY, '0');
+
+  // === STAGE 2: Show marker ===
+  await sleep(400);
+  marker.style.transition = 'opacity 0.4s';
+  marker.setAttribute('opacity', '1');
+
+  await sleep(600);
+  checkBtn.classList.add('ready');
+
+  // === STAGE 3: Press Check ===
+  await sleep(1500);
+  showLabel('Submitting answer...');
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  // === STAGE 4: Animate the ball ===
+  await sleep(500);
+  showLabel('Animation playing...');
+
+  const ANIM_DURATION = 3000;
+  const startTime = performance.now();
+
+  function animFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / ANIM_DURATION, 1);
+    const currentT = progress * tHit;
+
+    // Move ball and trace dot
+    positionBall(currentT);
+
+    // Draw curve up to current t
+    curve.setAttribute('d', buildPath(ballY, 0, currentT, Math.max(2, Math.floor(progress * 120))));
+
+    if (progress < 1) {
+      requestAnimationFrame(animFrame);
+    } else {
+      // === STAGE 5: Green confirmation ===
+
+      // Brief ball "impact" enlarge
+      ball.setAttribute('r', '13');
+      setTimeout(() => ball.setAttribute('r', '10'), 250);
+
+      // Green marker
+      document.getElementById('marker-circle').setAttribute('stroke', '#2ecc40');
+      document.getElementById('marker-circle').setAttribute('fill', 'rgba(46, 204, 64, 0.15)');
+      document.getElementById('marker-v').setAttribute('stroke', '#2ecc40');
+      document.getElementById('marker-h').setAttribute('stroke', '#2ecc40');
+
+      // Green confirmation ring pulse
+      confirmRing.setAttribute('opacity', '1');
+      confirmRing.setAttribute('r', '7');
+      let ringStart = performance.now();
+      function pulseRing(t) {
+        const p = Math.min((t - ringStart) / 400, 1);
+        const r = 7 + p * 10;
+        const op = 1 - p * 0.7;
+        confirmRing.setAttribute('r', r);
+        confirmRing.setAttribute('opacity', op);
+        if (p < 1) requestAnimationFrame(pulseRing);
+        else confirmRing.setAttribute('opacity', '0');
+      }
+      requestAnimationFrame(pulseRing);
+
+      // Trace dot turns green
+      traceDot.setAttribute('fill', '#2ecc40');
+      traceDot.setAttribute('r', '7');
+      setTimeout(() => traceDot.setAttribute('r', '5'), 400);
+
+      // Slots turn green
+      slotT.style.borderColor = '#2ecc40';
+      slotT.style.background = '#efffef';
+      slotY.style.borderColor = '#2ecc40';
+      slotY.style.background = '#efffef';
+
+      // Check button turns green
+      checkBtn.style.background = '#2ecc40';
+      checkBtn.style.color = '#fff';
+      checkBtn.textContent = 'Correct!';
+
+      animRunning = false;
+    }
+  }
+
+  requestAnimationFrame(animFrame);
+}
+
+// === Init ===
+function init() {
+  positionBall(0);
+  setupMarker();
+}
+
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+init();
+setTimeout(animate, 800);
+</script>
+</body>
+</html>

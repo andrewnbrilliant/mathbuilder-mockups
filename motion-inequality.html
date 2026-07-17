@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motion Inequality Mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 45%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a; margin-bottom: 10px; margin-top: 10px;
+  }
+
+  /* Graph */
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.15;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .graph-container svg { width: 100%; height: 100%; }
+
+  /* Equations */
+  .equations {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+  .eq-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+  }
+  .eq-color-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .eq-color-dot.pink { background: #e91e8c; }
+  .eq-color-dot.blue { background: #2196f3; }
+
+  /* Input row */
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 0 4px;
+    font-size: 14.5px;
+    color: #1a1a1a;
+    line-height: 1.6;
+  }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 46px; height: 32px; padding: 0 8px;
+    border: 1.5px solid #d0d0d0; border-radius: 6px;
+    background: #fafafa; transition: all 0.25s;
+  }
+  .slot.active { border-color: #2196f3; background: #f0f5ff; }
+  .slot.filled { border-color: #2196f3; background: #f0f5ff; color: #1a1a1a; }
+  .slot .katex { font-size: 0.95em; }
+  .slot-num { min-width: 56px; }
+
+  /* Keyboard area */
+  .keyboard-area {
+    background: #f7f8fa; border-top: 1px solid #e8e8e8;
+    padding: 10px 8px 8px;
+    min-height: 56px;
+  }
+
+  /* Tappy tiles */
+  .tappy-row {
+    display: flex; gap: 8px; justify-content: center;
+  }
+  .tappy-tile {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 1; height: 44px;
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 10px;
+    font-size: 20px; color: #1a1a1a;
+    transition: all 0.15s; user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    cursor: pointer;
+  }
+  .tappy-tile.pressed {
+    background: #e3f0ff; border-color: #2196f3; transform: scale(0.94);
+    box-shadow: none;
+  }
+  .tappy-tile .katex { font-size: 1.1em; }
+
+  /* Spanny keyboard */
+  .keyboard-row { display: flex; gap: 4px; margin-bottom: 4px; justify-content: center; }
+  .keyboard-row:last-child { margin-bottom: 0; }
+
+  .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 38px;
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 7px;
+    font-size: 16px; font-weight: 500; color: #1a1a1a;
+    transition: all 0.12s; user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .key.pressed { background: #e0e0e0; border-color: #999; transform: scale(0.93); box-shadow: none; }
+  .key.wide { width: auto; padding: 0 10px; font-size: 13px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 10px 20px 24px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 20px; bottom: 24px;
+    width: 38px; height: 38px; background: #2ecc40; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 18px; height: 18px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&#x2715;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#x26A1;</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      Over what time period is the pink vehicle ahead of the blue vehicle?
+    </div>
+
+    <div class="graph-container">
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="plot-clip">
+            <rect x="45" y="10" width="280" height="250" />
+          </clipPath>
+        </defs>
+
+        <!-- Grid lines -->
+        <g stroke="#e8e8e8" stroke-width="0.5">
+          <!-- Vertical: t=1..8, x = 45 + 35*t -->
+          <line x1="80"  y1="10" x2="80"  y2="260"/>
+          <line x1="115" y1="10" x2="115" y2="260"/>
+          <line x1="150" y1="10" x2="150" y2="260"/>
+          <line x1="185" y1="10" x2="185" y2="260"/>
+          <line x1="220" y1="10" x2="220" y2="260"/>
+          <line x1="255" y1="10" x2="255" y2="260"/>
+          <line x1="290" y1="10" x2="290" y2="260"/>
+          <line x1="325" y1="10" x2="325" y2="260"/>
+          <!-- Horizontal: y=4,8,...,28 -->
+          <line x1="45" y1="224.3" x2="325" y2="224.3"/>
+          <line x1="45" y1="188.6" x2="325" y2="188.6"/>
+          <line x1="45" y1="152.9" x2="325" y2="152.9"/>
+          <line x1="45" y1="117.1" x2="325" y2="117.1"/>
+          <line x1="45" y1="81.4"  x2="325" y2="81.4"/>
+          <line x1="45" y1="45.7"  x2="325" y2="45.7"/>
+          <line x1="45" y1="10"    x2="325" y2="10"/>
+        </g>
+
+        <!-- Axes -->
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="265" x2="45" y2="5" stroke="#888" stroke-width="1.5"/>
+        <!-- Arrow heads -->
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <!-- Axis labels -->
+        <text x="330" y="278" font-size="11" fill="#888" text-anchor="end"
+              font-family="-apple-system, BlinkMacSystemFont, sans-serif">t (s)</text>
+        <text x="22" y="15" font-size="11" fill="#888" text-anchor="middle"
+              font-family="-apple-system, BlinkMacSystemFont, sans-serif">y (m)</text>
+
+        <!-- X tick labels: 0, 2, 4, 6, 8 -->
+        <g font-size="10" fill="#999" text-anchor="middle"
+           font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          <text x="45"  y="278">0</text>
+          <text x="115" y="278">2</text>
+          <text x="185" y="278">4</text>
+          <text x="255" y="278">6</text>
+          <text x="325" y="278">8</text>
+        </g>
+
+        <!-- Y tick labels: 0, 4, 8, 12, 16, 20, 24, 28 -->
+        <g font-size="10" fill="#999" text-anchor="end"
+           font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          <text x="38" y="264">0</text>
+          <text x="38" y="228.3">4</text>
+          <text x="38" y="192.6">8</text>
+          <text x="38" y="156.9">12</text>
+          <text x="38" y="121.1">16</text>
+          <text x="38" y="85.4">20</text>
+          <text x="38" y="49.7">24</text>
+          <text x="38" y="14">28</text>
+        </g>
+
+        <!-- Shaded region: 0 <= t < 6 (hidden initially) -->
+        <rect id="shade-region" x="45" y="10" width="210" height="250"
+              fill="rgba(233,30,140,0.1)" opacity="0" style="transition: opacity 0.8s"/>
+        <line id="shade-boundary" x1="255" y1="10" x2="255" y2="260"
+              stroke="#e91e8c" stroke-width="1.5" stroke-dasharray="6,4"
+              opacity="0" style="transition: opacity 0.8s"/>
+
+        <!-- Plot area (clipped) -->
+        <g clip-path="url(#plot-clip)">
+          <!-- Pink line: y_p = t + 12 -->
+          <path id="pink-line" d="" stroke="#e91e8c" stroke-width="2.5" fill="none"/>
+          <!-- Blue line: y_b = 3t -->
+          <path id="blue-line" d="" stroke="#2196f3" stroke-width="2.5" fill="none"/>
+        </g>
+
+        <!-- Dots (trace along curves) -->
+        <circle id="pink-dot" r="5" fill="#e91e8c"/>
+        <circle id="blue-dot" r="5" fill="#2196f3"/>
+
+        <!-- Pink car (left of y-axis) -->
+        <g id="pink-car">
+          <rect x="0" y="0" width="28" height="14" rx="3" fill="#e91e8c"/>
+          <rect x="4" y="-6" width="14" height="8" rx="2" fill="#f48fb1"/>
+          <circle cx="6" cy="16" r="3.5" fill="#333"/>
+          <circle cx="22" cy="16" r="3.5" fill="#333"/>
+          <circle cx="6" cy="16" r="1.5" fill="#666"/>
+          <circle cx="22" cy="16" r="1.5" fill="#666"/>
+        </g>
+
+        <!-- Blue car (left of y-axis) -->
+        <g id="blue-car">
+          <rect x="0" y="0" width="28" height="14" rx="3" fill="#2196f3"/>
+          <rect x="4" y="-6" width="14" height="8" rx="2" fill="#90caf9"/>
+          <circle cx="6" cy="16" r="3.5" fill="#333"/>
+          <circle cx="22" cy="16" r="3.5" fill="#333"/>
+          <circle cx="6" cy="16" r="1.5" fill="#666"/>
+          <circle cx="22" cy="16" r="1.5" fill="#666"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Equations -->
+    <div class="equations">
+      <div class="eq-item">
+        <div class="eq-color-dot pink"></div>
+        <span id="eq-pink"></span>
+      </div>
+      <div class="eq-item">
+        <div class="eq-color-dot blue"></div>
+        <span id="eq-blue"></span>
+      </div>
+    </div>
+
+    <!-- Input row -->
+    <div class="input-row">
+      <span>Pink is ahead when</span>
+      <span id="input-t"></span>
+      <div class="slot" id="slot-ineq"></div>
+      <div class="slot slot-num" id="slot-num"></div>
+    </div>
+
+    <!-- Tappy keyboard (inequality operators) -->
+    <div class="keyboard-area" id="kb-tappy">
+      <div class="tappy-row">
+        <div class="tappy-tile" id="tile-lt"></div>
+        <div class="tappy-tile" id="tile-gt"></div>
+        <div class="tappy-tile" id="tile-le"></div>
+        <div class="tappy-tile" id="tile-ge"></div>
+      </div>
+    </div>
+
+    <!-- Spanny keyboard (digits) -->
+    <div class="keyboard-area hidden" id="kb-spanny">
+      <div class="keyboard-row">
+        <div class="key" data-val="1">1</div>
+        <div class="key" data-val="2">2</div>
+        <div class="key" data-val="3">3</div>
+        <div class="key" data-val="4">4</div>
+        <div class="key" data-val="5">5</div>
+      </div>
+      <div class="keyboard-row">
+        <div class="key" data-val="6">6</div>
+        <div class="key" data-val="7">7</div>
+        <div class="key" data-val="8">8</div>
+        <div class="key" data-val="9">9</div>
+        <div class="key" data-val="0">0</div>
+        <div class="key" data-val=".">.</div>
+        <div class="key wide" data-val="backspace">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+            <line x1="18" y1="9" x2="12" y2="15"/>
+            <line x1="12" y1="9" x2="18" y2="15"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
+        10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3
+        1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0
+        5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+// ── Coordinate transforms ──────────────────────────────────────
+// t: 0..8 → x: 45..325   y: 0..28 → svgY: 260..10
+const G = { xMin: 45, xMax: 325, yMin: 260, yMax: 10, tMax: 8, yValMax: 28 };
+
+function tToX(t)    { return G.xMin + (t / G.tMax) * (G.xMax - G.xMin); }
+function yToSvg(y)  { return G.yMin - (y / G.yValMax) * (G.yMin - G.yMax); }
+
+// ── Motion functions ───────────────────────────────────────────
+function pinkY(t) { return t + 12; }
+function blueY(t) { return 3 * t; }
+
+// ── Path builders ──────────────────────────────────────────────
+function buildPath(fn, tStart, tEnd, steps) {
+  let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    d += (i === 0 ? 'M' : 'L') + tToX(t).toFixed(1) + ',' + yToSvg(fn(t)).toFixed(1);
+  }
+  return d;
+}
+
+// ── Position car (left of y-axis) and dot (on curve) ───────────
+function positionCar(carId, dotId, fn, t) {
+  const x  = tToX(t);
+  const sy = yToSvg(fn(t));
+
+  const dot = document.getElementById(dotId);
+  dot.setAttribute('cx', x);
+  dot.setAttribute('cy', sy);
+
+  // Car stays on y-axis rail, moves vertically with position
+  document.getElementById(carId).setAttribute('transform',
+    `translate(${G.xMin - 30 - 14}, ${sy - 14})`);
+}
+
+// ── Stage label ────────────────────────────────────────────────
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+let animRunning = false;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ── Main animation sequence ────────────────────────────────────
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+
+  const pinkLine      = document.getElementById('pink-line');
+  const blueLine       = document.getElementById('blue-line');
+  const shadeRegion    = document.getElementById('shade-region');
+  const shadeBoundary  = document.getElementById('shade-boundary');
+  const slotIneq       = document.getElementById('slot-ineq');
+  const slotNum        = document.getElementById('slot-num');
+  const checkBtn       = document.getElementById('check-btn');
+  const kbTappy        = document.getElementById('kb-tappy');
+  const kbSpanny       = document.getElementById('kb-spanny');
+
+  // ── Reset ──
+  pinkLine.setAttribute('d', '');
+  blueLine.setAttribute('d', '');
+  shadeRegion.setAttribute('opacity', '0');
+  shadeBoundary.setAttribute('opacity', '0');
+
+  slotIneq.innerHTML = '';
+  slotIneq.className = 'slot';
+  slotNum.innerHTML  = '';
+  slotNum.className  = 'slot slot-num';
+
+  checkBtn.classList.remove('ready');
+  checkBtn.style.transform = '';
+
+  kbTappy.classList.remove('hidden');
+  kbSpanny.classList.add('hidden');
+  document.querySelectorAll('.tappy-tile').forEach(t => t.classList.remove('pressed'));
+
+  // Re-render tappy tile labels (they were cleared if replay)
+  renderLatex(document.getElementById('tile-lt'), '<');
+  renderLatex(document.getElementById('tile-gt'), '>');
+  renderLatex(document.getElementById('tile-le'), '\\leq');
+  renderLatex(document.getElementById('tile-ge'), '\\geq');
+
+  positionCar('pink-car', 'pink-dot', pinkY, 0);
+  positionCar('blue-car', 'blue-dot', blueY, 0);
+
+  renderLatex(document.getElementById('eq-pink'), 'y_p = t + 12');
+  renderLatex(document.getElementById('eq-blue'), 'y_b = 3t');
+  renderLatex(document.getElementById('input-t'), 't');
+
+  // ── Stage 1: Initial pause ──
+  await sleep(1200);
+
+  // ── Stage 2: Select inequality < ──
+  showLabel('Selecting inequality...');
+  slotIneq.classList.add('active');
+  await sleep(800);
+
+  const ltTile = document.getElementById('tile-lt');
+  ltTile.classList.add('pressed');
+  await sleep(250);
+  ltTile.classList.remove('pressed');
+
+  slotIneq.classList.remove('active');
+  slotIneq.classList.add('filled');
+  renderLatex(slotIneq, '<');
+
+  await sleep(600);
+
+  // ── Stage 3: Switch to spanny, type 6 ──
+  kbTappy.classList.add('hidden');
+  kbSpanny.classList.remove('hidden');
+  slotNum.classList.add('active');
+
+  showLabel('Entering value...');
+  await sleep(700);
+
+  const key6 = document.querySelector('#kb-spanny .key[data-val="6"]');
+  key6.classList.add('pressed');
+  await sleep(200);
+  key6.classList.remove('pressed');
+
+  slotNum.classList.remove('active');
+  slotNum.classList.add('filled');
+  renderLatex(slotNum, '6');
+
+  await sleep(700);
+
+  // ── Stage 4: Shade region 0 <= t < 6 ──
+  showLabel('Shading region t < 6...');
+  shadeRegion.setAttribute('opacity', '1');
+  shadeBoundary.setAttribute('opacity', '1');
+
+  await sleep(1200);
+
+  // ── Stage 5: Activate Check button ──
+  checkBtn.classList.add('ready');
+  await sleep(1300);
+
+  showLabel('Submitting answer...');
+  checkBtn.style.transform = 'scale(0.96)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  await sleep(600);
+
+  // ── Stage 6: Animate cars and draw lines ──
+  showLabel('Animation playing...');
+
+  const DURATION = 3000;
+  const T_MAX    = 8;
+  const t0       = performance.now();
+
+  await new Promise(resolve => {
+    function frame(now) {
+      const progress  = Math.min((now - t0) / DURATION, 1);
+      const currentT  = progress * T_MAX;
+      const steps     = Math.max(2, Math.floor(progress * 80));
+
+      positionCar('pink-car', 'pink-dot', pinkY, currentT);
+      positionCar('blue-car', 'blue-dot', blueY, currentT);
+
+      pinkLine.setAttribute('d', buildPath(pinkY, 0, currentT, steps));
+      blueLine.setAttribute('d',  buildPath(blueY, 0, currentT, steps));
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+
+  animRunning = false;
+}
+
+// ── Init ───────────────────────────────────────────────────────
+function init() {
+  renderLatex(document.getElementById('eq-pink'), 'y_p = t + 12');
+  renderLatex(document.getElementById('eq-blue'), 'y_b = 3t');
+  renderLatex(document.getElementById('input-t'), 't');
+
+  renderLatex(document.getElementById('tile-lt'), '<');
+  renderLatex(document.getElementById('tile-gt'), '>');
+  renderLatex(document.getElementById('tile-le'), '\\leq');
+  renderLatex(document.getElementById('tile-ge'), '\\geq');
+
+  positionCar('pink-car', 'pink-dot', pinkY, 0);
+  positionCar('blue-car', 'blue-dot', blueY, 0);
+}
+
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+init();
+setTimeout(animate, 800);
+</script>
+</body>
+</html>

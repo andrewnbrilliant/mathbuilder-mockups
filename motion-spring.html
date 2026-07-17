@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Mass SHM Mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 45%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a; margin-bottom: 12px; margin-top: 10px;
+  }
+
+  /* Graph */
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.15;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .graph-container svg { width: 100%; height: 100%; }
+
+  /* Equations below graph */
+  .equations {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .eq-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .eq-label { color: #1a1a1a; }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 70px; height: 30px; padding: 0 8px;
+    border: 1.5px solid #d0d0d0; border-radius: 6px;
+    background: #fafafa; transition: all 0.2s;
+  }
+  .slot.active { border-color: #2196f3; background: #f0f5ff; }
+  .slot.filled { border-color: #2196f3; background: #f0f5ff; color: #1a1a1a; }
+  .slot .katex { font-size: 0.9em; }
+
+  /* Keyboard */
+  .keyboard-area {
+    background: #f7f8fa; border-top: 1px solid #e8e8e8;
+    padding: 10px 8px 6px;
+  }
+  .keyboard-row { display: flex; gap: 4px; margin-bottom: 4px; justify-content: center; }
+  .keyboard-row:last-child { margin-bottom: 0; }
+
+  .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 38px;
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 7px;
+    font-size: 16px; font-weight: 500; color: #1a1a1a;
+    transition: all 0.12s; user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .key.pressed { background: #e0e0e0; border-color: #999; transform: scale(0.93); box-shadow: none; }
+  .key.wide { width: auto; padding: 0 7px; font-size: 13px; }
+  .key .katex { font-size: 0.78em; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 10px 20px 24px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 20px; bottom: 24px;
+    width: 38px; height: 38px; background: #2ecc40; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 18px; height: 18px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      A mass on a spring is displaced by 10 cm from equilibrium. For every cm of displacement, it accelerates at 2 cm/s&sup2; toward equilibrium. Complete the function that describes its position.
+    </div>
+
+    <div class="graph-container">
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="plot-clip">
+            <rect x="45" y="10" width="280" height="250" />
+          </clipPath>
+        </defs>
+
+        <!-- Gridlines (light) -->
+        <g stroke="#e8e8e8" stroke-width="0.5">
+          <!-- Horizontal gridlines at x = 10, 5, -5, -10 -->
+          <line x1="45" y1="30.8" x2="325" y2="30.8"/>
+          <line x1="45" y1="82.9" x2="325" y2="82.9"/>
+          <line x1="45" y1="187.1" x2="325" y2="187.1"/>
+          <line x1="45" y1="239.2" x2="325" y2="239.2"/>
+          <!-- Vertical gridlines at t = 2, 4, 6, 8 -->
+          <line x1="101" y1="10" x2="101" y2="260"/>
+          <line x1="157" y1="10" x2="157" y2="260"/>
+          <line x1="213" y1="10" x2="213" y2="260"/>
+          <line x1="269" y1="10" x2="269" y2="260"/>
+        </g>
+
+        <!-- Equilibrium line x=0 (thicker/darker) -->
+        <line x1="45" y1="135" x2="325" y2="135" stroke="#bbb" stroke-width="1"/>
+
+        <!-- Axes -->
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="265" x2="45" y2="5" stroke="#888" stroke-width="1.5"/>
+        <!-- Arrow heads -->
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <!-- Axis labels -->
+        <text x="330" y="278" font-size="11" fill="#888" text-anchor="end">t (s)</text>
+        <text x="30" y="15" font-size="11" fill="#888" text-anchor="middle">x (cm)</text>
+
+        <!-- Tick labels: t-axis -->
+        <text x="45" y="278" font-size="10" fill="#999" text-anchor="middle">0</text>
+        <text x="101" y="278" font-size="10" fill="#999" text-anchor="middle">2</text>
+        <text x="157" y="278" font-size="10" fill="#999" text-anchor="middle">4</text>
+        <text x="213" y="278" font-size="10" fill="#999" text-anchor="middle">6</text>
+        <text x="269" y="278" font-size="10" fill="#999" text-anchor="middle">8</text>
+
+        <!-- Tick labels: x-axis (vertical) -->
+        <text x="38" y="34.8" font-size="10" fill="#999" text-anchor="end">10</text>
+        <text x="38" y="86.9" font-size="10" fill="#999" text-anchor="end">5</text>
+        <text x="38" y="139" font-size="10" fill="#999" text-anchor="end">0</text>
+        <text x="38" y="191.1" font-size="10" fill="#999" text-anchor="end">-5</text>
+        <text x="38" y="243.2" font-size="10" fill="#999" text-anchor="end">-10</text>
+
+        <!-- Plot area (clipped) -->
+        <g clip-path="url(#plot-clip)">
+          <!-- Dashed prediction curve -->
+          <path id="dashed-prediction" d="" stroke="#795548" stroke-width="2" fill="none"
+                stroke-dasharray="8,6" opacity="0"/>
+          <!-- Solid actual curve (drawn progressively) -->
+          <path id="solid-actual" d="" stroke="#795548" stroke-width="2.5" fill="none"
+                opacity="0"/>
+        </g>
+
+        <!-- Graph tracing dot -->
+        <circle id="graph-dot" cx="45" cy="135" r="5" fill="#795548" opacity="0"/>
+
+        <!-- === Spring-mass system (left of y-axis) === -->
+        <!-- Ceiling bar (at very top so spring works across full x range) -->
+        <line x1="7" y1="2" x2="37" y2="2" stroke="#999" stroke-width="3" stroke-linecap="round"/>
+        <!-- Spring polyline (updated dynamically) -->
+        <polyline id="spring" points="" fill="none" stroke="#888" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Mass block (20x20) -->
+        <rect id="mass-block" x="12" y="21" width="20" height="20" rx="2"
+              fill="#795548" stroke="#5d4037" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- Equation with blank -->
+    <div class="equations">
+      <div class="eq-row">
+        <span class="eq-label" id="eq-prefix"></span>
+        <div class="slot active" id="slot-omega"></div>
+        <span class="eq-label" id="eq-suffix"></span>
+      </div>
+    </div>
+
+    <!-- Keyboard: digits 0-9, dot, sqrt, pi, backspace -->
+    <div class="keyboard-area">
+      <div class="keyboard-row">
+        <div class="key" data-val="1">1</div>
+        <div class="key" data-val="2">2</div>
+        <div class="key" data-val="3">3</div>
+        <div class="key" data-val="4">4</div>
+        <div class="key" data-val="5">5</div>
+        <div class="key" data-val=".">.</div>
+      </div>
+      <div class="keyboard-row">
+        <div class="key" data-val="6">6</div>
+        <div class="key" data-val="7">7</div>
+        <div class="key" data-val="8">8</div>
+        <div class="key" data-val="9">9</div>
+        <div class="key" data-val="0">0</div>
+        <div class="key wide" data-val="sqrt" id="key-sqrt"></div>
+        <div class="key wide" data-val="pi" id="key-pi"></div>
+        <div class="key wide" data-val="backspace">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+/* ── Coordinate transforms ───────────────────────────────── */
+// Graph plot area: svgX 45..325, svgY 10..260
+// Data ranges: t 0..10, x -12..12 (center at 0)
+// This single transform is used for BOTH the graph dot AND the spring mass,
+// so they always share the same vertical position.
+
+function tToSvgX(t) { return 45 + (t / 10) * 280; }
+function xToSvgY(x) { return 135 - (x / 12) * 125; }
+
+/* ── Physics ─────────────────────────────────────────────── */
+const OMEGA = Math.SQRT2;   // exact: sqrt(2) ~ 1.4142
+const AMP   = 10;
+
+function xOfT(t) { return AMP * Math.cos(OMEGA * t); }
+
+/* ── Token-to-LaTeX converter ────────────────────────────── */
+// Handles 'sqrt' token: wraps all following tokens inside \sqrt{}.
+// Handles 'pi' token: emits \pi.
+function tokensToLatex(toks) {
+  var result = '';
+  var i = 0;
+  while (i < toks.length) {
+    if (toks[i] === 'sqrt') {
+      i++;
+      var inner = '';
+      // Collect everything after sqrt that isn't another special token
+      while (i < toks.length && toks[i] !== 'sqrt' && toks[i] !== 'pi') {
+        inner += toks[i];
+        i++;
+      }
+      // Show a thin-space placeholder if nothing inside yet
+      result += '\\sqrt{' + (inner || '\\,') + '}';
+    } else if (toks[i] === 'pi') {
+      result += '\\pi';
+      i++;
+    } else {
+      result += toks[i];
+      i++;
+    }
+  }
+  return result;
+}
+
+/* ── Spring-mass system ──────────────────────────────────── */
+// Ceiling bar is at svgY = 2 (top of viewBox).
+// Spring attaches at svgY = 5 (just below the bar).
+// Mass position uses xToSvgY — same transform as the graph dot.
+// The spring dynamically adjusts its coil count and zigzag width
+// so it looks correct across the full range of compression/extension.
+
+var SP_CX        = 22;    // horizontal center
+var SP_ATTACH_Y  = 5;     // spring top attachment point
+
+function generateSpringPoints(massY) {
+  var topY = SP_ATTACH_Y;
+  var botY = massY - 10;              // top edge of 20x20 mass block
+  var len  = botY - topY;
+
+  if (len < 3) {
+    // Fully compressed — just a straight connector
+    return SP_CX + ',' + topY + ' ' + SP_CX + ',' + Math.max(botY, topY + 1);
+  }
+
+  // Dynamic coil count: fewer when compressed, more when stretched
+  var nZigs = Math.min(12, Math.max(4, Math.floor(len / 10)));
+
+  // Dynamic zigzag width: narrower when tightly compressed
+  var segH  = len / (nZigs + 1);
+  var zigW  = Math.min(7, Math.max(3, segH * 0.8));
+
+  var pts = [];
+  pts.push([SP_CX, topY]);
+  for (var i = 1; i <= nZigs; i++) {
+    var y = topY + i * (len / (nZigs + 1));
+    var x = (i % 2 === 1) ? SP_CX - zigW : SP_CX + zigW;
+    pts.push([x, y]);
+  }
+  pts.push([SP_CX, botY]);
+
+  return pts.map(function(p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+}
+
+function updateSpringMass(xVal) {
+  // Mass vertical center = xToSvgY(xVal), same as graph dot
+  var massY = xToSvgY(xVal);
+  document.getElementById('mass-block').setAttribute('y', massY - 10);
+  document.getElementById('spring').setAttribute('points', generateSpringPoints(massY));
+}
+
+/* ── Path builder ────────────────────────────────────────── */
+function buildPath(fn, tStart, tEnd, steps) {
+  var d = '';
+  for (var i = 0; i <= steps; i++) {
+    var t = tStart + (tEnd - tStart) * (i / steps);
+    var sx = tToSvgX(t);
+    var sy = xToSvgY(fn(t));
+    d += (i === 0 ? 'M' : 'L') + sx.toFixed(1) + ',' + sy.toFixed(1);
+  }
+  return d;
+}
+
+/* ── Stage label ─────────────────────────────────────────── */
+function showLabel(text) {
+  var el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(function() { el.classList.remove('visible'); }, 1800);
+}
+
+/* ── Animation ───────────────────────────────────────────── */
+// Type sqrt then 2 to produce \sqrt{2}
+var TYPE_SEQUENCE = ['sqrt', '2'];
+var animRunning = false;
+
+function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+
+  // ── Reset ──
+  var dashedPred  = document.getElementById('dashed-prediction');
+  var solidActual = document.getElementById('solid-actual');
+  var graphDot    = document.getElementById('graph-dot');
+  var slot        = document.getElementById('slot-omega');
+  var checkBtn    = document.getElementById('check-btn');
+
+  dashedPred.setAttribute('d', '');
+  dashedPred.setAttribute('opacity', '0');
+  solidActual.setAttribute('d', '');
+  solidActual.setAttribute('opacity', '0');
+  graphDot.setAttribute('opacity', '0');
+  slot.classList.remove('filled');
+  slot.classList.add('active');
+  slot.innerHTML = '';
+  checkBtn.classList.remove('ready');
+  checkBtn.style.transform = '';
+
+  // Spring at initial displacement x = 10 (mass high, spring compressed)
+  updateSpringMass(AMP);
+
+  renderLatex(document.getElementById('eq-prefix'), 'x(t) = 10\\cos(');
+  renderLatex(document.getElementById('eq-suffix'), '\\!\\cdot\\, t\\,)');
+
+  await sleep(1200);
+
+  // ── STAGE 1: Type sqrt 2 ──
+  showLabel('Entering prediction...');
+  var typed = [];
+
+  for (var ci = 0; ci < TYPE_SEQUENCE.length; ci++) {
+    var ch = TYPE_SEQUENCE[ci];
+    await sleep(450);
+    typed.push(ch);
+
+    // Flash key
+    var keyEl = document.querySelector('.key[data-val="' + ch + '"]');
+    if (keyEl) {
+      keyEl.classList.add('pressed');
+      (function(k) { setTimeout(function() { k.classList.remove('pressed'); }, 150); })(keyEl);
+    }
+
+    // Update slot with LaTeX rendering
+    slot.classList.add('filled');
+    renderLatex(slot, tokensToLatex(typed.slice()));
+  }
+
+  await sleep(600);
+
+  // ── STAGE 2: Show dashed prediction curve ──
+  // Prediction uses exact omega = sqrt(2), same as actual (correct answer)
+  dashedPred.setAttribute('d', buildPath(xOfT, 0, 10, 300));
+  dashedPred.setAttribute('opacity', '0.5');
+
+  await sleep(400);
+  checkBtn.classList.add('ready');
+
+  // ── STAGE 3: Press Check ──
+  await sleep(1500);
+  showLabel('Submitting answer...');
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  // ── STAGE 4: Animate the oscillation ──
+  await sleep(500);
+  showLabel('Animation playing...');
+
+  var ANIM_DURATION = 5000;   // 5 seconds real time
+  var ANIM_T_MAX    = 10;     // covers t = 0..10  (~2.25 oscillations)
+  var startTime = performance.now();
+
+  solidActual.setAttribute('opacity', '1');
+  graphDot.setAttribute('opacity', '1');
+
+  function animFrame(now) {
+    var elapsed  = now - startTime;
+    var progress = Math.min(elapsed / ANIM_DURATION, 1);
+    var currentT = progress * ANIM_T_MAX;
+    var xVal     = xOfT(currentT);
+
+    // Shared vertical position for both mass and dot
+    var svgY = xToSvgY(xVal);
+
+    // Update spring-mass (uses xToSvgY internally)
+    updateSpringMass(xVal);
+
+    // Move graph dot — same svgY as the mass
+    graphDot.setAttribute('cx', tToSvgX(currentT).toFixed(1));
+    graphDot.setAttribute('cy', svgY.toFixed(1));
+
+    // Draw solid curve up to current t
+    var steps = Math.max(2, Math.floor(progress * 300));
+    solidActual.setAttribute('d', buildPath(xOfT, 0, currentT, steps));
+
+    if (progress < 1) {
+      requestAnimationFrame(animFrame);
+    } else {
+      animRunning = false;
+    }
+  }
+
+  requestAnimationFrame(animFrame);
+}
+
+/* ── Init ────────────────────────────────────────────────── */
+function init() {
+  // Render KaTeX on special keyboard keys
+  renderLatex(document.getElementById('key-sqrt'), '\\sqrt{\\phantom{n}}');
+  renderLatex(document.getElementById('key-pi'), '\\pi');
+
+  // Equation fragments
+  renderLatex(document.getElementById('eq-prefix'), 'x(t) = 10\\cos(');
+  renderLatex(document.getElementById('eq-suffix'), '\\!\\cdot\\, t\\,)');
+
+  // Set spring to initial displacement
+  updateSpringMass(AMP);
+}
+
+document.getElementById('replay').addEventListener('click', function() {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+init();
+setTimeout(animate, 800);
+</script>
+</body>
+</html>

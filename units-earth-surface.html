@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathBuilder Mockup — Earth Surface Area</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar {
+    display: flex; align-items: center; padding: 16px 18px 12px; gap: 12px;
+  }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; cursor: pointer; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 80%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; align-items: center; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 24px; display: flex; flex-direction: column; }
+  .spacer-top { height: 32px; }
+
+  .prompt-text {
+    font-size: 16px; line-height: 1.55; color: #1a1a1a; margin-bottom: 24px;
+  }
+
+  /* Interactive box */
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1.5px solid #bbb;
+    border-radius: 6px;
+    background: #f5f5f5;
+    color: #1a1a1a;
+  }
+
+  .slot .katex { font-size: 0.95em; }
+
+  .computed-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding-top: 4px;
+    border-top: 1px solid #eee;
+  }
+
+  .computed-value {
+    font-size: 15px;
+    color: #555;
+  }
+
+  .computed-value .katex { font-size: 0.95em; color: #555; }
+
+  /* Spanny keyboard */
+  .keyboard-area {
+    background: #f7f8fa;
+    border-top: 1px solid #e8e8e8;
+    padding: 12px 8px 8px;
+  }
+
+  .keyboard-row {
+    display: flex; gap: 5px; margin-bottom: 5px; justify-content: center;
+  }
+  .keyboard-row:last-child { margin-bottom: 0; }
+
+  .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 42px;
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    font-size: 17px; font-weight: 500; color: #1a1a1a;
+    cursor: pointer; transition: all 0.08s; user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .key:hover { border-color: #999; background: #f5f5f5; }
+  .key:active { background: #eee; transform: scale(0.96); }
+
+  .key.wide {
+    width: auto; padding: 0 8px; font-size: 14px;
+  }
+
+  .key.backspace {
+    width: 46px; background: #f0f0f0; border-color: #d0d0d0;
+  }
+  .key.backspace:hover { background: #e8e8e8; }
+
+  .key .katex { font-size: 0.82em; }
+
+  .start-over {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; color: #aaa; font-size: 14px; cursor: pointer; padding: 12px 0;
+  }
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+
+  .check-btn {
+    width: 100%; height: 48px; border-radius: 24px; border: none;
+    background: #1a1a1a; color: #fff; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+
+  .tutor-icon {
+    position: absolute; left: 24px; bottom: 28px;
+    width: 40px; height: 40px; background: #2ecc40; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">✕</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+    </div>
+    <div class="bolt">⚡</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="prompt-text">
+      The radius of the Earth is 6,400 km. Compute its surface area.
+    </div>
+
+    <!-- Interactive box -->
+    <div class="interactive-box">
+      <div class="input-row">
+        <div class="slot" id="input-display"></div>
+      </div>
+      <div class="computed-row">
+        <span class="computed-value" id="computed-display"></span>
+      </div>
+    </div>
+
+    <!-- Spanny keyboard -->
+    <div class="keyboard-area">
+      <div class="keyboard-row">
+        <div class="key" data-val="1">1</div>
+        <div class="key" data-val="2">2</div>
+        <div class="key" data-val="3">3</div>
+        <div class="key" data-val="4">4</div>
+        <div class="key" data-val="5">5</div>
+        <div class="key" data-val=".">.</div>
+        <div class="key" data-val="*">×</div>
+        <div class="key" data-val="/">÷</div>
+        <div class="key" data-val="π" id="key-pi"></div>
+      </div>
+      <div class="keyboard-row">
+        <div class="key" data-val="6">6</div>
+        <div class="key" data-val="7">7</div>
+        <div class="key" data-val="8">8</div>
+        <div class="key" data-val="9">9</div>
+        <div class="key" data-val="0">0</div>
+        <div class="key wide" data-val="^" id="key-exp"></div>
+        <div class="key wide" data-val="km2" id="key-km2"></div>
+        <div class="key wide" data-val="m2" id="key-m2"></div>
+        <div class="key backspace" data-val="backspace">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+// Pre-filled answer: 4 × π × 6400^2 km²
+// Computed: ≈ 514,718,540 km²
+const PREFILLED = ['4', '*', 'π', '*', '6400', '^', '2', 'km2'];
+
+let tokens = [...PREFILLED];
+
+function tokensToLatex(toks) {
+  if (toks.length === 0) return '\\phantom{0}';
+  let result = '';
+  let i = 0;
+  while (i < toks.length) {
+    const t = toks[i];
+    if (t === '^') {
+      result += '^{';
+      i++;
+      // collect exponent digits
+      if (i < toks.length && !['*', '/', 'km2', 'm2', '^'].includes(toks[i])) {
+        result += tokenToLatex(toks[i]);
+        i++;
+      } else {
+        result += '\\square';
+      }
+      result += '}';
+    } else {
+      result += tokenToLatex(t);
+      i++;
+    }
+  }
+  return result;
+}
+
+function tokenToLatex(t) {
+  switch (t) {
+    case '*': return ' \\times ';
+    case '/': return ' \\div ';
+    case 'π': return '\\pi';
+    case 'km2': return '\\text{ km}^2';
+    case 'm2': return '\\text{ m}^2';
+    default: return t;
+  }
+}
+
+function computeValue(toks) {
+  // Extract unit (last token if it's a unit)
+  let unit = null;
+  let numToks = [...toks];
+  if (numToks.length > 0 && (numToks[numToks.length - 1] === 'km2' || numToks[numToks.length - 1] === 'm2')) {
+    unit = numToks.pop();
+  }
+
+  // Build expression string
+  let expr = '';
+  let i = 0;
+  while (i < numToks.length) {
+    const t = numToks[i];
+    if (t === '^') {
+      i++;
+      if (i < numToks.length) {
+        expr += '**' + numToks[i];
+        i++;
+      }
+    } else if (t === '*') {
+      expr += '*';
+      i++;
+    } else if (t === '/') {
+      expr += '/';
+      i++;
+    } else if (t === 'π') {
+      expr += Math.PI.toString();
+      i++;
+    } else {
+      expr += t;
+      i++;
+    }
+  }
+
+  try {
+    const val = Function('"use strict"; return (' + expr + ')')();
+    if (typeof val === 'number' && isFinite(val)) {
+      // Format with commas
+      const formatted = val.toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      });
+      let latex = '\\approx ' + formatted.replace(/,/g, '{,}');
+      if (unit) latex += tokenToLatex(unit);
+      return latex;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function render() {
+  const inputEl = document.getElementById('input-display');
+  const computedEl = document.getElementById('computed-display');
+
+  renderLatex(inputEl, tokensToLatex(tokens));
+
+  const computed = computeValue(tokens);
+  if (computed) {
+    renderLatex(computedEl, computed);
+    computedEl.style.display = '';
+    computedEl.parentElement.style.display = '';
+  } else {
+    computedEl.style.display = 'none';
+    computedEl.parentElement.style.display = 'none';
+  }
+}
+
+function init() {
+  renderLatex(document.getElementById('key-exp'), '\\square^\\square');
+  renderLatex(document.getElementById('key-pi'), '\\pi');
+  renderLatex(document.getElementById('key-km2'), '\\text{km}^2');
+  renderLatex(document.getElementById('key-m2'), '\\text{m}^2');
+  render();
+}
+
+document.querySelectorAll('.key').forEach(key => {
+  key.addEventListener('click', () => {
+    const val = key.dataset.val;
+    if (val === 'backspace') {
+      if (tokens.length > 0) tokens.pop();
+    } else if (val === 'π') {
+      tokens.push('π');
+    } else {
+      tokens.push(val);
+    }
+    render();
+  });
+});
+
+document.getElementById('start-over').addEventListener('click', () => {
+  tokens = [];
+  render();
+});
+
+init();
+</script>
+</body>
+</html>
