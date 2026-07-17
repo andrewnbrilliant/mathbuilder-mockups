@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit Conversion — m/s to mph</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 750px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 16px 18px 12px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 60%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 24px; display: flex; flex-direction: column; }
+  .spacer-top { height: 20px; }
+
+  .prompt-text { font-size: 15px; line-height: 1.5; color: #1a1a1a; margin-bottom: 16px; }
+
+  /* Interactive box */
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .given-value { font-size: 16px; color: #1a1a1a; font-weight: 500; }
+  .given-value .katex { font-size: 1em; }
+
+  /* Conversion equation line */
+  .conv-line {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: center;
+  }
+
+  .eq-sign { font-size: 15px; color: #1a1a1a; }
+  .coeff { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+  .times { font-size: 14px; color: #999; }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .frac-top, .frac-bot {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 2px;
+  }
+
+  .frac-bar {
+    height: 1.5px;
+    background: #1a1a1a;
+    width: 100%;
+  }
+
+  .u { font-size: 12px; color: #666; }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; height: 24px; padding: 0 5px;
+    border: 1.5px solid #d0d0d0; border-radius: 5px;
+    background: #fafafa; cursor: pointer; transition: all 0.15s;
+    font-size: 13px; font-weight: 500; color: #1a1a1a;
+  }
+  .slot:hover { border-color: #aaa; }
+  .slot.active { border-color: #888; background: #f5f5f5; }
+  .slot.filled { border-color: #bbb; background: #f5f5f5; }
+
+  /* Calculator result */
+  .calc-result {
+    padding: 4px 12px;
+    background: #f5f7fa;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #555;
+    opacity: 0;
+    transition: opacity 0.3s;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .calc-result.visible { opacity: 1; }
+  .calc-result .katex { font-size: 0.9em; }
+
+  /* Tile bank */
+  .bank-area {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin-bottom: 14px;
+  }
+
+  .tile {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 40px; height: 36px; padding: 0 12px;
+    background: #fff; border: 1.5px solid #d0d0d0; border-radius: 8px;
+    font-size: 14px; font-weight: 500; color: #1a1a1a;
+    cursor: pointer; transition: all 0.12s; user-select: none;
+  }
+  .tile:hover { border-color: #999; }
+  .tile.pressed { background: #e8e8e8; border-color: #999; transform: scale(0.93); }
+  .tile.used { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+
+  .start-over {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    color: #aaa; font-size: 14px; cursor: pointer; margin-bottom: 16px;
+  }
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .check-btn {
+    width: 100%; height: 48px; border-radius: 24px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 24px; bottom: 28px;
+    width: 40px; height: 40px; background: #2ecc40; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="prompt-text">
+      Convert 30&thinsp;m/s into miles per hour.
+    </div>
+
+    <div class="interactive-box">
+      <!-- Given value -->
+      <div class="given-value" id="given-value"></div>
+
+      <!-- Conversion equation -->
+      <div class="conv-line">
+        <span class="eq-sign">=</span>
+        <span class="coeff">30</span>
+
+        <!-- m/s (static) -->
+        <div class="frac">
+          <div class="frac-top"><span class="u">m</span></div>
+          <div class="frac-bar"></div>
+          <div class="frac-bot"><span class="u">s</span></div>
+        </div>
+
+        <span class="times">&times;</span>
+
+        <!-- Conversion 1: s → h -->
+        <div class="frac">
+          <div class="frac-top">
+            <div class="slot active" id="s0"></div>
+            <span class="u">s</span>
+          </div>
+          <div class="frac-bar"></div>
+          <div class="frac-bot">
+            <div class="slot" id="s1"></div>
+            <span class="u">h</span>
+          </div>
+        </div>
+
+        <span class="times">&times;</span>
+
+        <!-- Conversion 2: m → mile -->
+        <div class="frac">
+          <div class="frac-top">
+            <div class="slot" id="s2"></div>
+            <span class="u">mile</span>
+          </div>
+          <div class="frac-bar"></div>
+          <div class="frac-bot">
+            <div class="slot" id="s3"></div>
+            <span class="u">m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calculator result (preplaced unit) -->
+      <div class="calc-result" id="calc-result"></div>
+    </div>
+
+    <div class="bank-area" id="bank"></div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+const TILES = [
+  { label: '3600', value: 3600 },
+  { label: '1', value: 1 },
+  { label: '1', value: 1 },
+  { label: '1609', value: 1609 },
+  { label: '60', value: 60 },
+  { label: '1000', value: 1000 },
+];
+
+const SLOT_IDS = ['s0', 's1', 's2', 's3'];
+let slots = [null, null, null, null];
+let activeSlot = 0;
+let interactionEnabled = false;
+
+function render() {
+  SLOT_IDS.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active', 'filled');
+    if (slots[i] !== null) {
+      el.classList.add('filled');
+      el.textContent = TILES[slots[i]].label;
+    } else {
+      el.textContent = '';
+      if (i === activeSlot) el.classList.add('active');
+    }
+  });
+
+  document.querySelectorAll('.tile').forEach(t => {
+    const idx = parseInt(t.dataset.index);
+    t.classList.toggle('used', slots.includes(idx));
+  });
+
+  updateCalc();
+
+  const allFilled = slots.every(s => s !== null);
+  document.getElementById('check-btn').classList.toggle('ready', allFilled);
+}
+
+function updateCalc() {
+  const calcEl = document.getElementById('calc-result');
+  const vals = slots.map(i => i !== null ? TILES[i].value : null);
+  if (vals.some(v => v === null || v === 0)) {
+    calcEl.classList.remove('visible');
+    return;
+  }
+  const result = 30 * (vals[0] / vals[1]) * (vals[2] / vals[3]);
+  const isInt = Number.isInteger(result);
+  const clean = parseFloat(result.toFixed(6)) === result;
+  const prefix = (isInt || clean) ? '=' : '\\approx';
+  const str = isInt ? result.toString() : result.toFixed(2);
+  renderLatex(calcEl, `${prefix} \\, ${str} \\; \\text{mi/h}`);
+  calcEl.classList.add('visible');
+}
+
+function placeTile(idx) {
+  if (activeSlot === null) return;
+  if (slots.includes(idx)) return;
+  slots[activeSlot] = idx;
+  const next = slots.findIndex(s => s === null);
+  activeSlot = next >= 0 ? next : null;
+  render();
+}
+
+function clickSlot(i) {
+  if (!interactionEnabled) return;
+  if (slots[i] !== null) {
+    slots[i] = null;
+    activeSlot = i;
+    render();
+  } else {
+    activeSlot = i;
+    render();
+  }
+}
+
+function resetAll() {
+  slots = [null, null, null, null];
+  activeSlot = 0;
+  const btn = document.getElementById('check-btn');
+  btn.classList.remove('ready', 'correct');
+  btn.textContent = 'Check';
+  render();
+}
+
+function buildBank() {
+  const bank = document.getElementById('bank');
+  bank.innerHTML = '';
+  TILES.forEach((t, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.index = i;
+    tile.textContent = t.label;
+    tile.addEventListener('click', () => { if (interactionEnabled) placeTile(i); });
+    bank.appendChild(tile);
+  });
+}
+
+// Slot click handlers
+SLOT_IDS.forEach((id, i) => {
+  document.getElementById(id).addEventListener('click', () => clickSlot(i));
+});
+
+// ── Animation ──
+
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+let animRunning = false;
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function animPlace(tileIdx) {
+  const el = document.querySelector(`.tile[data-index="${tileIdx}"]`);
+  el.classList.add('pressed');
+  await sleep(180);
+  el.classList.remove('pressed');
+  placeTile(tileIdx);
+}
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+  interactionEnabled = false;
+
+  resetAll(); buildBank(); render();
+  await sleep(1000);
+
+  showLabel('Filling in conversion factors...');
+  await sleep(500);
+
+  // 3600 s per h (numerator)
+  await animPlace(0); // 3600
+  await sleep(500);
+
+  // 1 h (denominator)
+  await animPlace(1); // 1
+  await sleep(500);
+
+  // 1 mile (numerator)
+  await animPlace(2); // 1
+  await sleep(500);
+
+  // 1609 m (denominator)
+  await animPlace(3); // 1609
+
+  await sleep(1200);
+
+  showLabel('Checking...');
+  const btn = document.getElementById('check-btn');
+  btn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  btn.style.transform = '';
+  await sleep(300);
+  btn.classList.remove('ready');
+  btn.classList.add('correct');
+  btn.textContent = 'Correct!';
+
+  interactionEnabled = true;
+  animRunning = false;
+}
+
+// ── Init ──
+
+renderLatex(document.getElementById('given-value'), '30\\;\\text{m/s}');
+
+document.getElementById('start-over').addEventListener('click', () => { resetAll(); buildBank(); render(); });
+document.getElementById('replay').addEventListener('click', () => { animRunning = false; setTimeout(animate, 100); });
+
+buildBank();
+render();
+setTimeout(animate, 600);
+</script>
+</body>
+</html>
