@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Average Speed — Unit Parts Tappy</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 750px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 16px 18px 12px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 50%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 24px; display: flex; flex-direction: column; }
+
+  .spacer-top { height: 32px; }
+
+  .prompt-text {
+    font-size: 15.5px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    margin-bottom: 28px;
+  }
+
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .label-text { font-size: 16px; color: #1a1a1a; }
+  .equals-sign { font-size: 18px; color: #1a1a1a; }
+
+  .static-value {
+    font-size: 16px;
+    color: #1a1a1a;
+  }
+
+  .fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .frac-bar {
+    width: 100%;
+    height: 1.5px;
+    background: #1a1a1a;
+    min-width: 50px;
+  }
+
+  .slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    height: 32px;
+    padding: 0 10px;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .slot:hover { border-color: #aaa; }
+  .slot.active { border-color: #888; background: #f5f5f5; }
+  .slot.filled { border-color: #bbb; background: #f5f5f5; color: #1a1a1a; }
+  .slot .katex { font-size: 0.92em; }
+
+  .bank-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 4px;
+    margin-bottom: 16px;
+    justify-content: center;
+  }
+
+  .tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 38px;
+    padding: 0 14px;
+    background: #fff;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .tile:hover { border-color: #999; }
+  .tile:active { background: #f0f0f0; }
+  .tile.pressed { background: #e8e8e8; border-color: #999; transform: scale(0.93); }
+  .tile.used { opacity: 0; pointer-events: none; }
+
+  .start-over {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+
+  .check-btn {
+    width: 100%; height: 48px; border-radius: 24px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 24px; bottom: 28px;
+    width: 40px; height: 40px; background: #2ecc40; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="prompt-text">
+      A cyclist travels 60&thinsp;km in 3&thinsp;hours. Find their average speed.
+    </div>
+
+    <div class="interactive-box">
+      <span class="label-text">Speed</span>
+      <span class="equals-sign">=</span>
+      <span class="static-value">20</span>
+      <div class="fraction">
+        <div class="slot active" id="slot-num"></div>
+        <div class="frac-bar"></div>
+        <div class="slot" id="slot-den"></div>
+      </div>
+    </div>
+
+    <div class="bank-area" id="bank"></div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+const TILES = [
+  { label: 'hour' },
+  { label: 'km' },
+  { label: 'mile' },
+  { label: 'second' },
+  { label: 'minute' },
+];
+
+let numTileIdx = null;
+let denTileIdx = null;
+let activeSlot = 'num';
+let interactionEnabled = false;
+
+function render() {
+  const numSlot = document.getElementById('slot-num');
+  const denSlot = document.getElementById('slot-den');
+  const checkBtn = document.getElementById('check-btn');
+
+  numSlot.classList.remove('active', 'filled');
+  if (numTileIdx !== null) {
+    numSlot.classList.add('filled');
+    numSlot.textContent = TILES[numTileIdx].label;
+  } else {
+    numSlot.textContent = '';
+    if (activeSlot === 'num') numSlot.classList.add('active');
+  }
+
+  denSlot.classList.remove('active', 'filled');
+  if (denTileIdx !== null) {
+    denSlot.classList.add('filled');
+    denSlot.textContent = TILES[denTileIdx].label;
+  } else {
+    denSlot.textContent = '';
+    if (activeSlot === 'den') denSlot.classList.add('active');
+  }
+
+  document.querySelectorAll('.tile').forEach(t => {
+    const idx = parseInt(t.dataset.index);
+    t.classList.toggle('used', idx === numTileIdx || idx === denTileIdx);
+  });
+
+  checkBtn.classList.toggle('ready', numTileIdx !== null && denTileIdx !== null);
+}
+
+function placeTile(idx) {
+  if (activeSlot === null) return;
+  if (idx === numTileIdx || idx === denTileIdx) return;
+
+  if (activeSlot === 'num') {
+    numTileIdx = idx;
+    activeSlot = denTileIdx === null ? 'den' : null;
+  } else {
+    denTileIdx = idx;
+    activeSlot = numTileIdx === null ? 'num' : null;
+  }
+  render();
+}
+
+function clickSlot(slot) {
+  if (!interactionEnabled) return;
+  if (slot === 'num' && numTileIdx !== null) {
+    numTileIdx = null;
+    activeSlot = 'num';
+    render();
+  } else if (slot === 'den' && denTileIdx !== null) {
+    denTileIdx = null;
+    activeSlot = 'den';
+    render();
+  } else {
+    activeSlot = slot;
+    render();
+  }
+}
+
+function resetAll() {
+  numTileIdx = null;
+  denTileIdx = null;
+  activeSlot = 'num';
+  const btn = document.getElementById('check-btn');
+  btn.classList.remove('ready', 'correct');
+  btn.textContent = 'Check';
+  render();
+}
+
+function buildBank() {
+  const bank = document.getElementById('bank');
+  bank.innerHTML = '';
+  TILES.forEach((t, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.index = i;
+    tile.textContent = t.label;
+    tile.addEventListener('click', () => {
+      if (!interactionEnabled) return;
+      placeTile(i);
+    });
+    bank.appendChild(tile);
+  });
+}
+
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+let animRunning = false;
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function animateTilePlace(tileIdx) {
+  const tileEl = document.querySelector(`.tile[data-index="${tileIdx}"]`);
+  tileEl.classList.add('pressed');
+  await sleep(180);
+  tileEl.classList.remove('pressed');
+  placeTile(tileIdx);
+}
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+  interactionEnabled = false;
+
+  resetAll();
+  buildBank();
+  render();
+
+  await sleep(1200);
+
+  showLabel('Selecting units...');
+  await sleep(500);
+
+  // Place "km" in numerator (index 1)
+  await animateTilePlace(1);
+  await sleep(600);
+
+  // Place "hour" in denominator (index 0)
+  await animateTilePlace(0);
+
+  await sleep(1000);
+
+  showLabel('Checking...');
+  const checkBtn = document.getElementById('check-btn');
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  await sleep(300);
+  checkBtn.classList.remove('ready');
+  checkBtn.classList.add('correct');
+  checkBtn.textContent = 'Correct!';
+
+  interactionEnabled = true;
+  animRunning = false;
+}
+
+document.getElementById('slot-num').addEventListener('click', () => clickSlot('num'));
+document.getElementById('slot-den').addEventListener('click', () => clickSlot('den'));
+document.getElementById('start-over').addEventListener('click', () => {
+  resetAll();
+  buildBank();
+  render();
+});
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+buildBank();
+render();
+setTimeout(animate, 600);
+</script>
+</body>
+</html>
