@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit Conversion — 30 m/s to mph</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 100vh;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 750px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 16px 18px 12px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 40%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 24px; display: flex; flex-direction: column; }
+  .spacer-top { height: 24px; }
+
+  .prompt-text {
+    font-size: 15.5px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+  }
+
+  .interactive-box {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 22px 14px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .given-line {
+    margin-bottom: 18px;
+  }
+  .given-line .katex { font-size: 1.2em; }
+
+  .equation-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .equation-row .katex { font-size: 1em; }
+
+  .frac-slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    min-height: 44px;
+    padding: 3px 6px;
+    border: 1.5px dashed #d0d0d0;
+    border-radius: 6px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .frac-slot:hover { border-color: #aaa; }
+  .frac-slot.active { border-color: #888; border-style: solid; background: #f5f5f5; }
+  .frac-slot.filled { border-color: #bbb; border-style: solid; background: #f5f5f5; }
+  .frac-slot .katex { font-size: 0.85em; }
+
+  .calc-result {
+    margin-top: 14px;
+    padding: 6px 14px;
+    background: #f5f7fa;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #555;
+    opacity: 0;
+    transition: opacity 0.3s;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .calc-result.visible { opacity: 1; }
+  .calc-result .katex { font-size: 1.05em; }
+
+  .bank-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 4px;
+    margin-bottom: 16px;
+    justify-content: center;
+  }
+
+  .tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    min-height: 50px;
+    padding: 5px 12px;
+    background: #fff;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .tile:hover { border-color: #999; }
+  .tile:active { background: #f0f0f0; }
+  .tile.pressed { background: #e8e8e8; border-color: #999; transform: scale(0.93); }
+  .tile.used { opacity: 0; pointer-events: none; }
+  .tile .katex { font-size: 0.85em; }
+
+  .start-over {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  .start-over:hover { color: #888; }
+  .start-over svg { width: 14px; height: 14px; }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-bar {
+    padding: 12px 24px 28px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+
+  .check-btn {
+    width: 100%; height: 48px; border-radius: 24px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+  .check-btn.incorrect { background: #e53935; color: #fff; }
+
+  .tutor-icon {
+    position: absolute; left: 24px; bottom: 28px;
+    width: 40px; height: 40px; background: #2ecc40; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tutor-icon svg { width: 20px; height: 20px; fill: #1a1a1a; }
+
+  .replay-btn {
+    position: absolute; top: 14px; right: 14px;
+    background: #f0f0f0; border: 1px solid #ddd; border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: #666; cursor: pointer; z-index: 10;
+  }
+  .replay-btn:hover { background: #e8e8e8; color: #333; }
+
+  .stage-label {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px;
+    border-radius: 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s;
+    z-index: 10; white-space: nowrap;
+  }
+  .stage-label.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="replay-btn" id="replay">Replay</button>
+  <div class="stage-label" id="stage-label"></div>
+
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div>
+      <div class="page-dot active"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+      <div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="spacer-top"></div>
+
+    <div class="prompt-text">
+      Convert 30 m/s into miles per hour.
+    </div>
+
+    <div class="interactive-box">
+      <div class="given-line" id="given-line"></div>
+
+      <div class="equation-row">
+        <span id="eq-prefix"></span>
+        <div class="frac-slot" id="slot1"></div>
+        <span id="eq-times"></span>
+        <div class="frac-slot" id="slot2"></div>
+      </div>
+
+      <div class="calc-result" id="calc-result"></div>
+    </div>
+
+    <div class="bank-area" id="bank"></div>
+
+    <div class="start-over" id="start-over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      Start over
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="tutor-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    </div>
+    <button class="check-btn" id="check-btn">Check</button>
+  </div>
+</div>
+
+<script>
+function renderLatex(el, latex) {
+  katex.render(latex, el, { throwOnError: false });
+}
+
+const TILES = [
+  { latex: '\\frac{3600\\,\\text{s}}{1\\,\\text{h}}',       numVal: 3600, denVal: 1,    numUnit: 's',    denUnit: 'h' },
+  { latex: '\\frac{1609\\,\\text{m}}{1\\,\\text{mile}}',     numVal: 1609, denVal: 1,    numUnit: 'm',    denUnit: 'mile' },
+  { latex: '\\frac{1\\,\\text{h}}{3600\\,\\text{s}}',        numVal: 1,    denVal: 3600, numUnit: 'h',    denUnit: 's' },
+  { latex: '\\frac{1\\,\\text{mile}}{1609\\,\\text{m}}',     numVal: 1,    denVal: 1609, numUnit: 'mile', denUnit: 'm' },
+];
+
+const CORRECT_SET = new Set([0, 3]);
+
+let slot1Idx = null;
+let slot2Idx = null;
+let activeSlot = 'slot1';
+let interactionEnabled = false;
+let checked = false;
+
+function cancelUnits(numUnits, denUnits) {
+  const num = [...numUnits];
+  const den = [...denUnits];
+  for (let i = num.length - 1; i >= 0; i--) {
+    const j = den.indexOf(num[i]);
+    if (j !== -1) {
+      num.splice(i, 1);
+      den.splice(j, 1);
+    }
+  }
+  return { num, den };
+}
+
+function formatUnits(units) {
+  return units.map(u => `\\text{${u}}`).join(' \\cdot ');
+}
+
+function render() {
+  const s1 = document.getElementById('slot1');
+  const s2 = document.getElementById('slot2');
+  const calcEl = document.getElementById('calc-result');
+  const checkBtn = document.getElementById('check-btn');
+
+  s1.classList.remove('active', 'filled');
+  if (slot1Idx !== null) {
+    s1.classList.add('filled');
+    renderLatex(s1, TILES[slot1Idx].latex);
+  } else {
+    s1.innerHTML = '';
+    if (activeSlot === 'slot1') s1.classList.add('active');
+  }
+
+  s2.classList.remove('active', 'filled');
+  if (slot2Idx !== null) {
+    s2.classList.add('filled');
+    renderLatex(s2, TILES[slot2Idx].latex);
+  } else {
+    s2.innerHTML = '';
+    if (activeSlot === 'slot2') s2.classList.add('active');
+  }
+
+  document.querySelectorAll('.tile').forEach(t => {
+    const idx = parseInt(t.dataset.index);
+    t.classList.toggle('used', idx === slot1Idx || idx === slot2Idx);
+  });
+
+  if (slot1Idx !== null && slot2Idx !== null) {
+    const t1 = TILES[slot1Idx];
+    const t2 = TILES[slot2Idx];
+    const val = 30 * (t1.numVal / t1.denVal) * (t2.numVal / t2.denVal);
+
+    const numUnits = ['m', t1.numUnit, t2.numUnit];
+    const denUnits = ['s', t1.denUnit, t2.denUnit];
+    const c = cancelUnits(numUnits, denUnits);
+
+    let unitLatex = '';
+    if (c.num.length && c.den.length) {
+      unitLatex = `\\frac{${formatUnits(c.num)}}{${formatUnits(c.den)}}`;
+    } else if (c.num.length) {
+      unitLatex = formatUnits(c.num);
+    } else if (c.den.length) {
+      unitLatex = `\\frac{1}{${formatUnits(c.den)}}`;
+    }
+
+    const isExact = Math.abs(val - Math.round(val)) < 0.001;
+    const sym = isExact ? '=' : '\\approx';
+    let valStr;
+    if (isExact) {
+      valStr = Math.round(val).toLocaleString();
+    } else {
+      valStr = parseFloat(val.toFixed(2)).toString();
+    }
+
+    renderLatex(calcEl, `${sym}\\; ${valStr}\\;${unitLatex}`);
+    calcEl.classList.add('visible');
+  } else {
+    calcEl.classList.remove('visible');
+  }
+
+  if (!checked) {
+    checkBtn.classList.remove('ready', 'correct', 'incorrect');
+    checkBtn.textContent = 'Check';
+    if (slot1Idx !== null && slot2Idx !== null) {
+      checkBtn.classList.add('ready');
+    }
+  }
+}
+
+function placeTile(idx) {
+  if (activeSlot === null) return;
+  if (idx === slot1Idx || idx === slot2Idx) return;
+
+  checked = false;
+  if (activeSlot === 'slot1') {
+    slot1Idx = idx;
+    activeSlot = slot2Idx === null ? 'slot2' : null;
+  } else {
+    slot2Idx = idx;
+    activeSlot = slot1Idx === null ? 'slot1' : null;
+  }
+  render();
+}
+
+function clickSlot(slot) {
+  if (!interactionEnabled) return;
+  checked = false;
+  if (slot === 'slot1' && slot1Idx !== null) {
+    slot1Idx = null;
+    activeSlot = 'slot1';
+    render();
+  } else if (slot === 'slot2' && slot2Idx !== null) {
+    slot2Idx = null;
+    activeSlot = 'slot2';
+    render();
+  } else {
+    activeSlot = slot;
+    render();
+  }
+}
+
+function doCheck() {
+  if (slot1Idx === null || slot2Idx === null) return;
+  checked = true;
+  const placed = new Set([slot1Idx, slot2Idx]);
+  const isCorrect = CORRECT_SET.size === placed.size && [...CORRECT_SET].every(v => placed.has(v));
+
+  const checkBtn = document.getElementById('check-btn');
+  checkBtn.classList.remove('ready');
+  checkBtn.classList.add(isCorrect ? 'correct' : 'incorrect');
+  checkBtn.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+}
+
+function resetAll() {
+  slot1Idx = null;
+  slot2Idx = null;
+  activeSlot = 'slot1';
+  checked = false;
+  const checkBtn = document.getElementById('check-btn');
+  checkBtn.classList.remove('ready', 'correct', 'incorrect');
+  checkBtn.textContent = 'Check';
+  checkBtn.style.transform = '';
+  render();
+}
+
+function buildBank() {
+  const bank = document.getElementById('bank');
+  bank.innerHTML = '';
+  TILES.forEach((t, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.index = i;
+    renderLatex(tile, t.latex);
+    tile.addEventListener('click', () => {
+      if (!interactionEnabled) return;
+      placeTile(i);
+    });
+    bank.appendChild(tile);
+  });
+}
+
+function showLabel(text) {
+  const el = document.getElementById('stage-label');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+let animRunning = false;
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function animateTilePlace(tileIdx) {
+  const tileEl = document.querySelector(`.tile[data-index="${tileIdx}"]`);
+  tileEl.classList.add('pressed');
+  await sleep(180);
+  tileEl.classList.remove('pressed');
+  placeTile(tileIdx);
+}
+
+async function animate() {
+  if (animRunning) return;
+  animRunning = true;
+  interactionEnabled = false;
+
+  resetAll();
+  buildBank();
+  render();
+
+  await sleep(1000);
+
+  showLabel('Selecting conversion factors...');
+  await sleep(400);
+  await animateTilePlace(0); // 3600 s / 1 h
+
+  await sleep(600);
+
+  await animateTilePlace(3); // 1 mile / 1609 m
+
+  await sleep(1200);
+
+  showLabel('Checking...');
+  const checkBtn = document.getElementById('check-btn');
+  checkBtn.style.transform = 'scale(0.97)';
+  await sleep(200);
+  checkBtn.style.transform = '';
+
+  await sleep(300);
+  doCheck();
+
+  interactionEnabled = true;
+  animRunning = false;
+}
+
+// Init
+renderLatex(document.getElementById('given-line'), '30\\;\\frac{\\text{m}}{\\text{s}}');
+renderLatex(document.getElementById('eq-prefix'), '= 30 \\cdot \\frac{\\text{m}}{\\text{s}}\\;\\times');
+renderLatex(document.getElementById('eq-times'), '\\times');
+
+document.getElementById('slot1').addEventListener('click', () => clickSlot('slot1'));
+document.getElementById('slot2').addEventListener('click', () => clickSlot('slot2'));
+document.getElementById('check-btn').addEventListener('click', () => {
+  if (!interactionEnabled) return;
+  doCheck();
+});
+document.getElementById('start-over').addEventListener('click', () => {
+  if (!interactionEnabled) return;
+  resetAll();
+  buildBank();
+  render();
+});
+document.getElementById('replay').addEventListener('click', () => {
+  animRunning = false;
+  setTimeout(animate, 100);
+});
+
+buildBank();
+render();
+setTimeout(animate, 600);
+</script>
+</body>
+</html>
