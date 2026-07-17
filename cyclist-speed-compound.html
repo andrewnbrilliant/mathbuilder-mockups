@@ -79,19 +79,23 @@
   /* Compound answer slot */
   .compound-slot {
     display: flex; align-items: stretch;
-    border: 1.5px dashed #c8c8c8; border-radius: 10px;
-    height: 52px; min-width: 190px;
+    border: 1.5px dashed #c8c8c8; border-radius: 8px;
+    height: 38px; min-width: 160px;
     transition: border-style 0.3s;
   }
   .compound-slot.has-fill { border-style: solid; border-color: #d0d0d0; }
 
   .compound-half {
-    flex: 1; display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     padding: 0 6px; cursor: pointer;
   }
-  .compound-placeholder { font-size: 11.5px; color: #bbb; font-style: italic; }
-  .compound-value { font-size: 17px; font-weight: 500; color: #1a1a1a; }
-  .compound-half .katex { font-size: 0.85em; }
+  .compound-half.num-half { flex: 1.2; }
+  .compound-half.unit-half { flex: 0.8; }
+  .compound-placeholder { font-size: 11px; color: #bbb; font-style: italic; }
+  .compound-value { font-weight: 500; color: #1a1a1a; }
+  .compound-half.num-half .compound-value { font-size: 15px; }
+  .compound-half.unit-half .compound-value { font-size: 13px; }
+  .compound-half .katex { font-size: 0.75em; }
   .compound-divider { display: flex; align-items: center; flex-shrink: 0; }
 
   /* Tile bank */
@@ -209,16 +213,16 @@
         <span class="equals-sign">=</span>
         <div class="rhs">
           <div class="compound-slot" id="compound-slot">
-            <div class="compound-half" id="compound-num">
+            <div class="compound-half num-half" id="compound-num">
               <span class="compound-placeholder">number</span>
             </div>
             <div class="compound-divider">
-              <svg viewBox="0 0 16 52" width="16" height="52">
-                <path id="wave-path" d="M 8,0 C 15,9 1,18 8,26 C 15,35 1,44 8,52"
+              <svg viewBox="0 0 12 38" width="12" height="38">
+                <path id="wave-path" d="M 6,0 C 11,7 1,12 6,19 C 11,26 1,31 6,38"
                       fill="none" stroke="#c8c8c8" stroke-width="1.5" stroke-dasharray="4,3"/>
               </svg>
             </div>
-            <div class="compound-half" id="compound-unit">
+            <div class="compound-half unit-half" id="compound-unit">
               <span class="compound-placeholder">unit</span>
             </div>
           </div>
@@ -278,15 +282,15 @@ const UNIT_TILES = [
 
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
-// Wave constants (±7px amplitude)
-const AMP = 7;
+// Wave constants (±5px amplitude)
+const AMP = 5;
 function numTilePath(w, h) {
-  const wx = w - 14;
+  const wx = w - 10;
   return `M 4,1 L ${wx},1 C ${wx+AMP},${h*0.18} ${wx-AMP},${h*0.36} ${wx},${h*0.5} C ${wx+AMP},${h*0.64} ${wx-AMP},${h*0.82} ${wx},${h-1} L 4,${h-1} C 2,${h-1} 1,${h-2} 1,${h-3} L 1,4 C 1,2 2,1 4,1 Z`;
 }
 
 function unitTilePath(w, h) {
-  const wx = 14;
+  const wx = 10;
   return `M ${wx},1 C ${wx-AMP},${h*0.18} ${wx+AMP},${h*0.36} ${wx},${h*0.5} C ${wx-AMP},${h*0.64} ${wx+AMP},${h*0.82} ${wx},${h-1} L ${w-4},${h-1} C ${w-2},${h-1} ${w-1},${h-2} ${w-1},${h-3} L ${w-1},4 C ${w-1},2 ${w-2},1 ${w-4},1 L ${wx},1 Z`;
 }
 
@@ -319,7 +323,7 @@ function buildBank() {
   });
 
   // Shaped number tiles
-  const TW = 76, TH = 46;
+  const TW = 64, TH = 36;
   NUM_TILES.forEach((t, i) => {
     const wrap = document.createElement('div');
     wrap.className = 'shaped-tile';
@@ -337,11 +341,11 @@ function buildBank() {
     path.setAttribute('class', 'shape');
     svg.appendChild(path);
     const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    txt.setAttribute('x', (TW - 14) / 2);
+    txt.setAttribute('x', (TW - 10) / 2);
     txt.setAttribute('y', TH / 2 + 5);
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('font-family', FONT);
-    txt.setAttribute('font-size', '15');
+    txt.setAttribute('font-size', '14');
     txt.setAttribute('font-weight', '500');
     txt.setAttribute('fill', '#1a1a1a');
     txt.textContent = t.label;
@@ -352,7 +356,7 @@ function buildBank() {
   });
 
   // Shaped unit tiles
-  const UW = 76, UH = 46;
+  const UW = 60, UH = 36;
   UNIT_TILES.forEach((t, i) => {
     const wrap = document.createElement('div');
     wrap.className = 'shaped-tile';
@@ -370,30 +374,30 @@ function buildBank() {
     path.setAttribute('class', 'shape');
     svg.appendChild(path);
 
-    const cx = 14 + (UW - 14) / 2;
+    const cx = 10 + (UW - 10) / 2;
     if (t.frac) {
       const tn = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       tn.setAttribute('x', cx); tn.setAttribute('y', UH * 0.36);
       tn.setAttribute('text-anchor', 'middle'); tn.setAttribute('font-family', FONT);
-      tn.setAttribute('font-size', '12'); tn.setAttribute('font-weight', '500'); tn.setAttribute('fill', '#1a1a1a');
+      tn.setAttribute('font-size', '11'); tn.setAttribute('font-weight', '500'); tn.setAttribute('fill', '#1a1a1a');
       tn.textContent = t.frac.num;
       svg.appendChild(tn);
       const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      ln.setAttribute('x1', cx - 10); ln.setAttribute('y1', UH * 0.5);
-      ln.setAttribute('x2', cx + 10); ln.setAttribute('y2', UH * 0.5);
+      ln.setAttribute('x1', cx - 9); ln.setAttribute('y1', UH * 0.5);
+      ln.setAttribute('x2', cx + 9); ln.setAttribute('y2', UH * 0.5);
       ln.setAttribute('stroke', '#1a1a1a'); ln.setAttribute('stroke-width', '1');
       svg.appendChild(ln);
       const td = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       td.setAttribute('x', cx); td.setAttribute('y', UH * 0.78);
       td.setAttribute('text-anchor', 'middle'); td.setAttribute('font-family', FONT);
-      td.setAttribute('font-size', '12'); td.setAttribute('font-weight', '500'); td.setAttribute('fill', '#1a1a1a');
+      td.setAttribute('font-size', '11'); td.setAttribute('font-weight', '500'); td.setAttribute('fill', '#1a1a1a');
       td.textContent = t.frac.den;
       svg.appendChild(td);
     } else {
       const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      txt.setAttribute('x', cx); txt.setAttribute('y', UH / 2 + 5);
+      txt.setAttribute('x', cx); txt.setAttribute('y', UH / 2 + 4);
       txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-family', FONT);
-      txt.setAttribute('font-size', '12'); txt.setAttribute('font-weight', '500'); txt.setAttribute('fill', '#1a1a1a');
+      txt.setAttribute('font-size', '11'); txt.setAttribute('font-weight', '500'); txt.setAttribute('fill', '#1a1a1a');
       txt.textContent = t.svgLabel;
       svg.appendChild(txt);
     }
