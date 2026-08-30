@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clicky-Spanny Concept Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #1a1a1a;
+  }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  .problem-text {
+    font-size: 18px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .math {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 19px;
+  }
+
+  .math sup { font-size: 13px; vertical-align: super; }
+
+  /* Clicky dropdown */
+  .clicky {
+    display: inline-block;
+    position: relative;
+  }
+
+  .clicky-selected {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e8f0fe;
+    border: 2px solid #4285f4;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #4285f4;
+    cursor: pointer;
+    min-width: 36px;
+    justify-content: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .clicky-selected:hover {
+    background: #d2e3fc;
+  }
+
+  .clicky-selected .arrow {
+    font-size: 10px;
+    margin-left: 2px;
+  }
+
+  .clicky-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 4px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    overflow: hidden;
+    z-index: 10;
+    min-width: 48px;
+  }
+
+  .clicky-dropdown.open { display: block; }
+
+  .clicky-option {
+    padding: 8px 16px;
+    font-size: 18px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.1s;
+  }
+
+  .clicky-option:hover { background: #e8f0fe; }
+  .clicky-option.selected { background: #d2e3fc; font-weight: 600; }
+
+  /* Spanny fields */
+  .spanny-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    min-height: 48px;
+  }
+
+  .spanny-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .spanny-label {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: #1a1a1a;
+    transition: opacity 0.3s;
+  }
+
+  .spanny-label.disabled { opacity: 0.35; }
+
+  .spanny-input {
+    width: 72px;
+    height: 40px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-size: 18px;
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s;
+    background: #f9f9f9;
+    color: #1a1a1a;
+  }
+
+  .spanny-input:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 0 3px rgba(66,133,244,0.15);
+    background: white;
+  }
+
+  .spanny-input.disabled {
+    background: #f0f0f0;
+    border-color: #e0e0e0;
+    color: #bbb;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .spanny-input.active {
+    border-color: #4285f4;
+    background: white;
+  }
+
+  .spanny-comma {
+    font-size: 18px;
+    color: #666;
+    transition: opacity 0.3s;
+  }
+
+  .spanny-comma.disabled { opacity: 0.35; }
+
+  /* Check button */
+  .check-btn {
+    display: block;
+    margin-top: 24px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #e0e0e0;
+    color: #999;
+  }
+
+  .check-btn.enabled {
+    background: #4285f4;
+    color: white;
+    cursor: pointer;
+  }
+
+  .check-btn.enabled:hover {
+    background: #3367d6;
+  }
+
+  /* Keyboard */
+  .keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .keyboard.visible {
+    opacity: 1;
+    max-height: 120px;
+  }
+
+  .keyboard-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .key {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    font-size: 18px;
+    font-family: 'Times New Roman', serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+    user-select: none;
+  }
+
+  .key:hover { background: #e8f0fe; }
+  .key:active { background: #d2e3fc; transform: scale(0.95); }
+
+  .key.wide {
+    width: 64px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+  }
+
+  .status-text {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #888;
+    min-height: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="problem-text">
+    The equation <span class="math"><span>x</span><sup>2</sup> + <span>x</span> + 2 = 0</span> has
+    <span class="clicky" id="clicky">
+      <span class="clicky-selected" id="clicky-btn">
+        <span id="clicky-value">?</span>
+        <span class="arrow">&#x25BC;</span>
+      </span>
+      <div class="clicky-dropdown" id="clicky-dropdown">
+        <div class="clicky-option" data-value="0">0</div>
+        <div class="clicky-option" data-value="1">1</div>
+        <div class="clicky-option" data-value="2">2</div>
+      </div>
+    </span>
+    solutions.
+  </div>
+
+  <div class="spanny-row">
+    <div class="spanny-group">
+      <span class="spanny-label disabled" id="label1"><i>x</i> =</span>
+      <input class="spanny-input disabled" id="spanny1" disabled placeholder="" tabindex="-1">
+    </div>
+    <span class="spanny-comma disabled" id="comma">,</span>
+    <div class="spanny-group">
+      <span class="spanny-label disabled" id="label2"><i>x</i> =</span>
+      <input class="spanny-input disabled" id="spanny2" disabled placeholder="" tabindex="-1">
+    </div>
+  </div>
+
+  <div class="keyboard" id="keyboard">
+    <div class="keyboard-row">
+      <div class="key" data-key="1">1</div>
+      <div class="key" data-key="2">2</div>
+      <div class="key" data-key="3">3</div>
+      <div class="key" data-key="4">4</div>
+      <div class="key" data-key="5">5</div>
+      <div class="key" data-key="+">+</div>
+    </div>
+    <div class="keyboard-row">
+      <div class="key" data-key="6">6</div>
+      <div class="key" data-key="7">7</div>
+      <div class="key" data-key="8">8</div>
+      <div class="key" data-key="9">9</div>
+      <div class="key" data-key="0">0</div>
+      <div class="key" data-key="-">&minus;</div>
+    </div>
+    <div class="keyboard-row">
+      <div class="key wide" data-key="del">&#x232B;</div>
+    </div>
+  </div>
+
+  <div class="status-text" id="status"></div>
+
+  <button class="check-btn" id="check-btn" disabled>Check</button>
+</div>
+
+<script>
+  const clickyBtn = document.getElementById('clicky-btn');
+  const clickyValue = document.getElementById('clicky-value');
+  const dropdown = document.getElementById('clicky-dropdown');
+  const options = document.querySelectorAll('.clicky-option');
+  const spanny1 = document.getElementById('spanny1');
+  const spanny2 = document.getElementById('spanny2');
+  const label1 = document.getElementById('label1');
+  const label2 = document.getElementById('label2');
+  const comma = document.getElementById('comma');
+  const keyboard = document.getElementById('keyboard');
+  const checkBtn = document.getElementById('check-btn');
+  const status = document.getElementById('status');
+
+  let selectedCount = null;
+  let activeSpanny = null;
+
+  clickyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+  });
+
+  options.forEach(opt => {
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = parseInt(opt.dataset.value);
+      selectedCount = val;
+
+      clickyValue.textContent = val;
+      options.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      dropdown.classList.remove('open');
+
+      // Reset and clear
+      spanny1.value = '';
+      spanny2.value = '';
+      activeSpanny = null;
+
+      if (val === 0) {
+        disableSpanny(spanny1, label1);
+        disableSpanny(spanny2, label2);
+        comma.classList.add('disabled');
+        keyboard.classList.remove('visible');
+        updateCheckBtn();
+      } else if (val === 1) {
+        enableSpanny(spanny1, label1);
+        disableSpanny(spanny2, label2);
+        comma.classList.add('disabled');
+        setActiveSpanny(spanny1);
+        keyboard.classList.add('visible');
+      } else if (val === 2) {
+        enableSpanny(spanny1, label1);
+        enableSpanny(spanny2, label2);
+        comma.classList.remove('disabled');
+        setActiveSpanny(spanny1);
+        keyboard.classList.add('visible');
+      }
+
+      status.textContent = '';
+    });
+  });
+
+  function disableSpanny(input, label) {
+    input.disabled = true;
+    input.classList.add('disabled');
+    input.classList.remove('active');
+    label.classList.add('disabled');
+    input.tabIndex = -1;
+  }
+
+  function enableSpanny(input, label) {
+    input.disabled = false;
+    input.classList.remove('disabled');
+    label.classList.remove('disabled');
+    input.tabIndex = 0;
+  }
+
+  function setActiveSpanny(input) {
+    [spanny1, spanny2].forEach(s => s.classList.remove('active'));
+    input.classList.add('active');
+    activeSpanny = input;
+    input.focus();
+  }
+
+  [spanny1, spanny2].forEach(s => {
+    s.addEventListener('focus', () => {
+      if (!s.disabled) setActiveSpanny(s);
+    });
+  });
+
+  // Keyboard input
+  document.querySelectorAll('.key').forEach(key => {
+    key.addEventListener('click', () => {
+      if (!activeSpanny) return;
+      const val = key.dataset.key;
+      if (val === 'del') {
+        activeSpanny.value = activeSpanny.value.slice(0, -1);
+      } else {
+        activeSpanny.value += val;
+      }
+      updateCheckBtn();
+    });
+  });
+
+  function updateCheckBtn() {
+    let valid = false;
+    if (selectedCount === 0) {
+      valid = true;
+    } else if (selectedCount === 1) {
+      valid = spanny1.value.trim() !== '';
+    } else if (selectedCount === 2) {
+      valid = spanny1.value.trim() !== '' && spanny2.value.trim() !== '';
+    }
+
+    if (valid) {
+      checkBtn.disabled = false;
+      checkBtn.classList.add('enabled');
+    } else {
+      checkBtn.disabled = true;
+      checkBtn.classList.remove('enabled');
+    }
+  }
+
+  // Prevent native keyboard on mobile
+  [spanny1, spanny2].forEach(s => {
+    s.addEventListener('keydown', e => e.preventDefault());
+    s.setAttribute('inputmode', 'none');
+  });
+
+  checkBtn.addEventListener('click', () => {
+    if (checkBtn.disabled) return;
+    status.textContent = '(Check logic not implemented in mockup)';
+  });
+</script>
+
+</body>
+</html>
