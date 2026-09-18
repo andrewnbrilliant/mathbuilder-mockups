@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunctionGraph Scatter — Non-Zero Axis Origin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 30px 20px 60px;
+    min-height: 100vh;
+    flex-wrap: wrap;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 45%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .page-dots { display: flex; gap: 5px; }
+  .page-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d4; }
+  .page-dot.active { background: #9a9a9a; }
+  .bolt { font-size: 18px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 0 20px; display: flex; flex-direction: column; }
+
+  .prompt-text {
+    font-size: 14.5px; line-height: 1.5; color: #1a1a1a;
+    margin-bottom: 12px; margin-top: 10px;
+  }
+
+  .graph-container {
+    width: 100%;
+    aspect-ratio: 1.155;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .graph-container svg { width: 100%; height: 100%; overflow: visible; }
+
+  .city-dot { cursor: pointer; }
+  .city-dot circle { transition: r 0.12s ease; }
+  .city-dot:hover circle.marker { r: 9; }
+
+  .readout {
+    margin: 4px 4px 0;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 8px;
+    background: #fafafa;
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.45;
+  }
+  .readout strong { color: #1a1a1a; }
+  .readout .muted { color: #9a9a9a; }
+
+  /* ---- side notes panel (not part of the lesson frame) ---- */
+  .notes {
+    width: 430px;
+    flex: 0 1 430px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px 24px 26px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #333;
+  }
+  .notes h1 { font-size: 17px; color: #1a1a1a; margin-bottom: 4px; }
+  .notes .sub { font-size: 12.5px; color: #8a8a8a; margin-bottom: 18px; }
+  .notes h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #9a9a9a; margin: 20px 0 8px; font-weight: 600;
+  }
+  .notes p { margin-bottom: 9px; }
+  .notes ul { margin: 0 0 9px 18px; }
+  .notes li { margin-bottom: 5px; }
+  .notes code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px; background: #f4f4f2; padding: 1px 4px; border-radius: 3px;
+  }
+  pre {
+    background: #f7f7f5; border: 1px solid #e8e8e8; border-radius: 8px;
+    padding: 12px 14px; overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px; line-height: 1.5; color: #2a2a2a;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #ededeb; }
+  th { color: #8a8a8a; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; color: #555; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #2196f3; margin-right: 7px; }
+  .callout {
+    border-left: 3px solid #2196f3; background: #f2f8fe;
+    padding: 10px 12px; border-radius: 0 6px 6px 0; margin: 12px 0;
+    font-size: 12.5px; color: #34495e;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="page-dots">
+      <div class="page-dot"></div><div class="page-dot active"></div><div class="page-dot"></div>
+    </div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="prompt-text">
+      Each point shows where a US city sits on the globe. Tap a city to read off its coordinates.
+    </div>
+
+    <div class="graph-container">
+      <!-- Plot area: x 45..325, y 10..260 -->
+      <svg id="graph" viewBox="0 0 335 290" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Grid lines (recessive) -->
+        <g stroke="#e8e8e8" stroke-width="0.5">
+          <!-- horizontal: lat 30,35,40,45,50 -->
+          <line x1="45" y1="210" x2="325" y2="210"/>
+          <line x1="45" y1="160" x2="325" y2="160"/>
+          <line x1="45" y1="110" x2="325" y2="110"/>
+          <line x1="45" y1="60"  x2="325" y2="60"/>
+          <line x1="45" y1="10"  x2="325" y2="10"/>
+          <!-- vertical: lon -120,-110,-100,-90,-80,-70 -->
+          <line x1="91.67"  y1="10" x2="91.67"  y2="260"/>
+          <line x1="138.33" y1="10" x2="138.33" y2="260"/>
+          <line x1="185"    y1="10" x2="185"    y2="260"/>
+          <line x1="231.67" y1="10" x2="231.67" y2="260"/>
+          <line x1="278.33" y1="10" x2="278.33" y2="260"/>
+          <line x1="325"    y1="10" x2="325"    y2="260"/>
+        </g>
+
+        <!-- Axes: they MEET at the bottom-left corner (-130, 25), which is not (0,0) -->
+        <line x1="45" y1="260" x2="330" y2="260" stroke="#888" stroke-width="1.5"/>
+        <line x1="45" y1="260" x2="45"  y2="5"   stroke="#888" stroke-width="1.5"/>
+        <polygon points="330,260 323,256 323,264" fill="#888"/>
+        <polygon points="45,5 41,12 49,12" fill="#888"/>
+
+        <!-- Tick marks, pointing outward from the axes -->
+        <g stroke="#888" stroke-width="1">
+          <line x1="45"     y1="260" x2="45"     y2="264"/>
+          <line x1="91.67"  y1="260" x2="91.67"  y2="264"/>
+          <line x1="138.33" y1="260" x2="138.33" y2="264"/>
+          <line x1="185"    y1="260" x2="185"    y2="264"/>
+          <line x1="231.67" y1="260" x2="231.67" y2="264"/>
+          <line x1="278.33" y1="260" x2="278.33" y2="264"/>
+          <line x1="325"    y1="260" x2="325"    y2="264"/>
+          <line x1="45" y1="260" x2="41" y2="260"/>
+          <line x1="45" y1="210" x2="41" y2="210"/>
+          <line x1="45" y1="160" x2="41" y2="160"/>
+          <line x1="45" y1="110" x2="41" y2="110"/>
+          <line x1="45" y1="60"  x2="41" y2="60"/>
+          <line x1="45" y1="10"  x2="41" y2="10"/>
+        </g>
+
+        <!-- Axis titles. Centred rather than end-anchored: these are longer than
+             the house style's "t (s)" and collide with the corner tick labels. -->
+        <text x="185" y="289" font-size="11" fill="#888" text-anchor="middle">Longitude (&#176;E)</text>
+        <text x="14" y="135" font-size="11" fill="#888" text-anchor="middle"
+              transform="rotate(-90 14 135)">Latitude (&#176;N)</text>
+
+        <!-- X tick labels. Note the corner reads -130, not 0. -->
+        <g font-size="10" fill="#999" text-anchor="middle">
+          <text x="45"     y="275">&#8722;130</text>
+          <text x="91.67"  y="275">&#8722;120</text>
+          <text x="138.33" y="275">&#8722;110</text>
+          <text x="185"    y="275">&#8722;100</text>
+          <text x="231.67" y="275">&#8722;90</text>
+          <text x="278.33" y="275">&#8722;80</text>
+          <text x="325"    y="275">&#8722;70</text>
+        </g>
+
+        <!-- Y tick labels. Corner reads 25, not 0. -->
+        <g font-size="10" fill="#999" text-anchor="end">
+          <text x="37" y="263">25</text>
+          <text x="37" y="213">30</text>
+          <text x="37" y="163">35</text>
+          <text x="37" y="113">40</text>
+          <text x="37" y="63">45</text>
+          <text x="37" y="13">50</text>
+        </g>
+
+        <!-- City points: single series, one hue, all directly labelled -->
+        <g id="cities">
+          <g class="city-dot" data-city="Seattle" data-lon="-122.33" data-lat="47.61">
+            <circle class="halo" cx="80.79" cy="33.90" r="13" fill="transparent"/>
+            <circle class="marker" cx="80.79" cy="33.90" r="7" fill="#2196f3" stroke="#fff" stroke-width="2"/>
+            <text x="91.79" y="37.90" font-size="10.5" fill="#1a1a1a" text-anchor="start">Seattle</text>
+          </g>
+          <g class="city-dot" data-city="Los Angeles" data-lon="-118.24" data-lat="34.05">
+            <circle class="halo" cx="99.88" cy="169.50" r="13" fill="transparent"/>
+            <circle class="marker" cx="99.88" cy="169.50" r="7" fill="#2196f3" stroke="#fff" stroke-width="2"/>
+            <text x="110.88" y="173.50" font-size="10.5" fill="#1a1a1a" text-anchor="start">Los Angeles</text>
+          </g>
+          <g class="city-dot" data-city="Denver" data-lon="-104.99" data-lat="39.74">
+            <circle class="halo" cx="161.71" cy="112.60" r="13" fill="transparent"/>
+            <circle class="marker" cx="161.71" cy="112.60" r="7" fill="#2196f3" stroke="#fff" stroke-width="2"/>
+            <text x="172.71" y="116.60" font-size="10.5" fill="#1a1a1a" text-anchor="start">Denver</text>
+          </g>
+          <g class="city-dot" data-city="Houston" data-lon="-95.37" data-lat="29.76">
+            <circle class="halo" cx="206.61" cy="212.40" r="13" fill="transparent"/>
+            <circle class="marker" cx="206.61" cy="212.40" r="7" fill="#2196f3" stroke="#fff" stroke-width="2"/>
+            <text x="217.61" y="216.40" font-size="10.5" fill="#1a1a1a" text-anchor="start">Houston</text>
+          </g>
+          <g class="city-dot" data-city="Chicago" data-lon="-87.63" data-lat="41.88">
+            <circle class="halo" cx="242.73" cy="91.20" r="13" fill="transparent"/>
+            <circle class="marker" cx="242.73" cy="91.20" r="7" fill="#2196f3" stroke="#fff" stroke-width="2"/>
+            <text x="242.73" y="79.20" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Chicago</text>
+          </g>
+          <g class="city-dot" data-city="New York" data-lon="-74.01" data-lat="40.71">
+            <circle class="halo" cx="306.29" cy="102.90" r="13" fill="transparent"/>
+            <circle class="marker" cx="306.29" cy="102.90" r="7" fill="#2196f3" stroke="#fff" stroke-width="2"/>
+            <text x="295.29" y="110.40" font-size="10.5" fill="#1a1a1a" text-anchor="end">New York</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="readout" id="readout">
+      <span class="muted">Tap a city to see its longitude and latitude.</span>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h1>Scatter plot with an arbitrary axis origin</h1>
+  <div class="sub">FunctionGraph style &middot; longitude &times; latitude &middot; 6 US cities</div>
+
+  <h2>The point of this example</h2>
+  <p>
+    Neither axis contains zero, and neither needs to. The axes still meet in the
+    bottom-left corner, but that corner is
+    <code>(&minus;130, 25)</code> &mdash; a spot in the Pacific, south-west of the
+    continental US &mdash; chosen only because it sits below and to the left of
+    every data point on round numbers.
+  </p>
+  <div class="callout">
+    In the existing <code>motion-graph</code> mockups the corner is labelled
+    <code>0</code> on both axes. Here it carries its real values, so nothing
+    implies the plot has been truncated or that the corner is an origin.
+  </div>
+  <p>
+    A non-zero baseline is legitimate here because position, not length, carries
+    the meaning: no mark's size is being compared, so nothing is exaggerated by
+    starting the axis at 25&#176;. (The zero-baseline rule applies to bars and
+    other length-encoded marks.)
+  </p>
+
+  <h2>Axis setup</h2>
+  <ul>
+    <li>Longitude <code>&minus;130</code> to <code>&minus;70</code>, ticks and labels every <code>10</code></li>
+    <li>Latitude <code>25</code> to <code>50</code>, ticks and labels every <code>5</code></li>
+    <li>Corner labelled on both axes; ticks point outward; grid stays recessive</li>
+    <li>Arrowheads kept at the far ends only, per the existing house style</li>
+  </ul>
+
+  <h2>Equivalent FunctionGraph config</h2>
+  <pre>main =
+    create
+        |&gt; withAxisX
+            (axis -130 -70
+                |&gt; ticksEvery 10
+                |&gt; labelsEvery 10
+                |&gt; title "Longitude"
+                |&gt; subtitle "(degrees east)")
+        |&gt; withAxisY
+            (axis 25 50
+                |&gt; ticksEvery 5
+                |&gt; labelsEvery 5
+                |&gt; title "Latitude"
+                |&gt; subtitle "(degrees north)")
+        |&gt; withPoints
+            [ point -122.33 47.61 |&gt; customPointLabel "Seattle"
+            , point -118.24 34.05 |&gt; customPointLabel "Los Angeles"
+            , point -104.99 39.74 |&gt; customPointLabel "Denver"
+            , point  -95.37 29.76 |&gt; customPointLabel "Houston"
+            , point  -87.63 41.88 |&gt; customPointLabel "Chicago"
+            , point  -74.01 40.71 |&gt; customPointLabel "New York"
+            ]
+        |&gt; embed</pre>
+  <p style="font-size:12.5px;color:#8a8a8a;">
+    Untested &mdash; written from the package API, not compiled. Only one example
+    in FunctionGraph V0 currently uses an axis range that excludes zero
+    (<code>axis 1 7</code>), and none has both axes excluding it, so the
+    rendering above is a proposal rather than observed behaviour.
+  </p>
+
+  <h2>Data</h2>
+  <table>
+    <thead>
+      <tr><th>City</th><th style="text-align:right">Longitude</th><th style="text-align:right">Latitude</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="swatch"></span>Seattle</td><td class="num">&minus;122.33</td><td class="num">47.61</td></tr>
+      <tr><td><span class="swatch"></span>Los Angeles</td><td class="num">&minus;118.24</td><td class="num">34.05</td></tr>
+      <tr><td><span class="swatch"></span>Denver</td><td class="num">&minus;104.99</td><td class="num">39.74</td></tr>
+      <tr><td><span class="swatch"></span>Houston</td><td class="num">&minus;95.37</td><td class="num">29.76</td></tr>
+      <tr><td><span class="swatch"></span>Chicago</td><td class="num">&minus;87.63</td><td class="num">41.88</td></tr>
+      <tr><td><span class="swatch"></span>New York</td><td class="num">&minus;74.01</td><td class="num">40.71</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  var readout = document.getElementById('readout');
+  var dots = document.querySelectorAll('.city-dot');
+
+  function fmt(n) {
+    var v = parseFloat(n);
+    return (v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
+  }
+
+  dots.forEach(function (dot) {
+    function show() {
+      var lon = parseFloat(dot.dataset.lon);
+      var lat = parseFloat(dot.dataset.lat);
+      readout.innerHTML =
+        '<strong>' + dot.dataset.city + '</strong><br>' +
+        'Longitude ' + fmt(lon) + '°E &nbsp;&middot;&nbsp; Latitude ' + fmt(lat) + '°N' +
+        ' <span class="muted">(' + Math.abs(lon).toFixed(2) + '°W)</span>';
+    }
+    dot.addEventListener('mouseenter', show);
+    dot.addEventListener('click', show);
+    dot.addEventListener('focus', show);
+    dot.setAttribute('tabindex', '0');
+  });
+</script>
+
+</body>
+</html>
