@@ -78,18 +78,6 @@
   .context-text { font-size: 14px; line-height: 1.55; color: #1a1a1a; }
   /* keep a rule or a condition whole when the sentence wraps */
   .context-text .katex { white-space: nowrap; }
-  .terms-caption {
-    margin-top: 12px; padding-top: 10px; border-top: 1px solid #e4e4ea;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
-    color: #9a9aa4; font-weight: 600; text-align: center; margin-bottom: 8px;
-  }
-  .terms { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
-  .term {
-    background: #fff; border: 1px solid #e0e0e8; border-radius: 7px;
-    padding: 4px 6px; font-size: 12.5px; color: #1a1a1a; white-space: nowrap;
-  }
-  .term .katex { font-size: 0.97em; }
-
   /* argument block (white card with border) */
   .argument-block {
     border: 1px solid #e4e4ea; border-radius: 12px; padding: 14px;
@@ -110,8 +98,9 @@
   .slot {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 54px; min-height: 30px; padding: 2px 9px; margin: 0 2px;
+    max-width: 100%;
     border: 1.5px solid #c9c9d2; border-radius: 7px; background: #fff;
-    font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    font-size: 13.5px; line-height: 1.3; color: #1a1a1a; cursor: pointer;
     vertical-align: middle; transition: all 0.18s; text-align: center;
   }
   .slot.empty { background: #fafafa; }
@@ -172,8 +161,8 @@
     <h2>Scenario</h2>
     <div id="dataset-buttons"></div>
     <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
-      One question shell — only the rule changes. The terms, and every comparison tile built from
-      them, are computed from the rule, so the bank can never disagree with the sequence.
+      One question shell — only the rule changes. No terms are listed: the learner works out
+      whichever ones their own argument needs.
     </p>
   </div>
 
@@ -181,8 +170,9 @@
     <h2>Why evidence, not just a label</h2>
     <p>Naming a sequence <em>increasing</em> is a guess until it is tied to a claim about
       <em>every</em> consecutive pair.</p>
-    <p>&ldquo;Neither&rdquo; is the interesting answer: it is true for two quite different reasons, and the
-      learner has to say which one they mean before they can produce the evidence.</p>
+    <p>&ldquo;Neither&rdquo; is the interesting answer, because it is the one that has to be
+      <em>shown</em>. The learner assembles their own comparison out of parts, and anything that
+      rules out both increasing and decreasing is accepted.</p>
   </div>
 </div>
 
@@ -197,8 +187,6 @@
   <div class="content">
     <div class="context-block">
       <div class="context-text" id="context-text"></div>
-      <div class="terms-caption">First five terms</div>
-      <div class="terms" id="terms"></div>
     </div>
 
     <div class="argument-block" id="argument"></div>
@@ -236,16 +224,16 @@
       </div>
       <div class="branch">
         <span class="tag nei">neither</span> →<br>
-        <strong>2.</strong> because the terms <code>?</code>
+        <strong>2.</strong> We can tell because <code>?</code> <code>?</code> <code>?</code><br>
+        <span style="color:#8a8a94">term, operator, term — built from parts</span>
         <div class="branch">
-          <strong>change direction</strong> →<br>
-          <strong>3.</strong> For example, <code>?</code> but <code>?</code><br>
-          <span style="color:#8a8a94">two true comparisons pointing opposite ways</span>
+          operator <code>=</code> → <strong>done.</strong><br>
+          <span style="color:#8a8a94">one true equality rules out both at once</span>
         </div>
         <div class="branch">
-          <strong>repeat a value</strong> →<br>
-          <strong>3.</strong> For example, <code>?</code><br>
-          <span style="color:#8a8a94">one equality that actually holds</span>
+          operator <code>&gt;</code> or <code>&lt;</code> →<br>
+          <strong>3.</strong> and <code>?</code> <code>?</code> <code>?</code><br>
+          <span style="color:#8a8a94">a second fact, to rule out the other direction</span>
         </div>
       </div>
     </div>
@@ -254,13 +242,16 @@
   <div class="card">
     <h2>Notes</h2>
     <p><strong>The depth of the argument is chosen by the learner.</strong> Two blanks settle
-      increasing or decreasing; &ldquo;neither&rdquo; costs a third and sometimes a fourth, because that
-      claim genuinely needs more evidence.</p>
-    <p><strong>The counterexample pair is graded by rule, not by an answer key.</strong> Any two
-      comparisons that are both true and point in opposite directions are accepted — there are
-      several honest ways to show a sequence turns around, and none of them is the &ldquo;expected&rdquo; one.</p>
-    <p><strong>Every tile bank is generated from the computed terms</strong>, with the false direction
-      of each pair kept in as a distractor. Editing a rule can never leave a stale tile behind.</p>
+      increasing or decreasing. &ldquo;Neither&rdquo; needs a comparison built from parts, and a second
+      one only if the first was an inequality — an equality has already done the whole job.</p>
+    <p><strong>Evidence is graded by what it rules out</strong>, never against an answer key. A true
+      rise rules out <em>decreasing</em>, a true fall rules out <em>increasing</em>, an equality rules
+      out both; the argument passes when both are ruled out. So
+      <code>a<sub>2</sub> &gt; a<sub>1</sub></code> with <code>a<sub>5</sub> &lt; a<sub>3</sub></code>
+      passes, even though the indices neither touch nor line up.</p>
+    <p><strong>Nothing is listed for the learner to read off.</strong> No table of terms and no
+      ready-made comparisons — choosing <em>which</em> two terms to compare is most of the thinking,
+      so it cannot be handed over in the bank.</p>
     <p><strong>A wrong first choice still finishes.</strong> Call a decreasing sequence increasing and
       you are handed the same evidence sentence, build a complete argument, and it fails on Check —
       with the red box on the claim that actually broke.</p>
@@ -269,8 +260,9 @@
 
 <script>
 // ---------------------------------------------------------------- scenarios
-// Each scenario supplies a rule as a function of n; the first five terms, and
-// therefore every comparison tile, are computed from it.
+// Each scenario supplies a rule as a function of n. Nothing is tabulated for
+// the learner — the terms exist only so the argument can be graded against the
+// sequence itself.
 const SCENARIOS = {
   'linear-up': {
     name: 'Increasing',
@@ -320,62 +312,58 @@ function isDecreasing() {
   for (let i = 1; i < N; i++) if (!(t[i + 1] < t[i])) return false;
   return true;
 }
-function changesDirection() {
-  const t = terms();
-  let up = false, down = false;
-  for (let i = 1; i < N; i++) {
-    if (t[i + 1] > t[i]) up = true;
-    if (t[i + 1] < t[i]) down = true;
-  }
-  return up && down;
-}
-function hasRepeat() {
-  const t = terms();
-  for (let i = 1; i <= N; i++)
-    for (let j = i + 1; j <= N; j++) if (t[i] === t[j]) return true;
-  return false;
-}
 function trueDirection() {
   if (isIncreasing()) return 'increasing';
   if (isDecreasing()) return 'decreasing';
   return 'neither';
 }
 
-// ---------------------------------------------------------------- comparison tiles
-// id form: "<i><op><j>", e.g. 2gt1 is  a_2 > a_1
+// ---------------------------------------------------------------- statements
+// The learner assembles "a_i OP a_j" out of three tiles. A statement is read by
+// index: whatever side of the operator a term was written on, the claim is
+// about moving from the lower index to the higher one.
 const OPS = { gt: '>', lt: '<', eq: '=' };
 
-function parseComp(id) {
-  const m = /^(\d+)(gt|lt|eq)(\d+)$/.exec(id);
-  return m ? { i: +m[1], op: m[2], j: +m[3] } : null;
-}
-function compTex(id) {
-  const c = parseComp(id);
-  return 'a_' + c.i + ' ' + OPS[c.op] + ' a_' + c.j;
-}
-// does this comparison actually hold for the current sequence?
-function compHolds(id) {
-  const c = parseComp(id), t = terms();
-  if (c.op === 'gt') return t[c.i] > t[c.j];
-  if (c.op === 'lt') return t[c.i] < t[c.j];
-  return t[c.i] === t[c.j];
-}
+// the two statements the learner may build, as blank-name triples
+const STATEMENTS = [['t1a', 'op1', 't1b'], ['t2a', 'op2', 't2b']];
 
-// Both directions of three consecutive pairs: for any pair exactly one of the
-// two tiles is true (or, if the terms are equal, neither is) — so the bank
-// always carries genuine distractors.
-function directionBank() {
-  const out = [];
-  [[2, 1], [3, 2], [4, 3]].forEach(([i, j]) => {
-    out.push(i + 'gt' + j);
-    out.push(i + 'lt' + j);
-  });
-  return out;
+function stmtAt(n) {
+  const [a, o, b] = STATEMENTS[n];
+  if (!filled(a) || !filled(o) || !filled(b)) return null;
+  return { i: Number(state.picks[a]), op: state.picks[o], j: Number(state.picks[b]) };
 }
-// Equalities to choose between, plus two strict comparisons that are never
-// evidence of a repeat even when they happen to be true.
-function repeatBank() {
-  return ['1eq2', '2eq3', '1eq5', '2gt1', '2lt1'];
+// statements the learner has actually completed
+function givenStatements() {
+  return [0, 1].map(stmtAt).filter(Boolean);
+}
+// comparing a term with itself claims nothing about the sequence
+function isVacuous(s) { return s.i === s.j; }
+// does the statement hold for the computed terms?
+function holds(s) {
+  const t = terms();
+  if (s.op === 'gt') return t[s.i] > t[s.j];
+  if (s.op === 'lt') return t[s.i] < t[s.j];
+  return t[s.i] === t[s.j];
+}
+function isValid(s) { return !isVacuous(s) && holds(s); }
+
+// What a true statement rules out, read from lower index to higher index:
+// a rise cannot happen in a decreasing sequence, a fall cannot happen in an
+// increasing one, and an equality is impossible in either.
+function rulesOut(s) {
+  const t = terms(), lo = Math.min(s.i, s.j), hi = Math.max(s.i, s.j);
+  if (t[hi] > t[lo]) return ['decreasing'];
+  if (t[hi] < t[lo]) return ['increasing'];
+  return ['increasing', 'decreasing'];
+}
+// the evidence stands up iff every statement is true and non-vacuous, and
+// between them they rule out both increasing and decreasing
+function evidenceOK() {
+  const sts = givenStatements();
+  if (!sts.length || !sts.every(isValid)) return false;
+  const out = new Set();
+  sts.forEach(s => rulesOut(s).forEach(d => out.add(d)));
+  return out.has('increasing') && out.has('decreasing');
 }
 
 // ---------------------------------------------------------------- blanks
@@ -384,9 +372,9 @@ function blankOrder() {
   const d = state.picks.dir;
   if (d === 'increasing' || d === 'decreasing') o.push('cmp');
   if (d === 'neither') {
-    o.push('why');
-    if (state.picks.why === 'direction') o.push('ex1', 'ex2');
-    if (state.picks.why === 'repeat') o.push('eq');
+    o.push('t1a', 'op1', 't1b');
+    // an equality settles it on its own; an inequality needs a second fact
+    if (state.picks.op1 === 'gt' || state.picks.op1 === 'lt') o.push('t2a', 'op2', 't2b');
   }
   return o;
 }
@@ -397,22 +385,18 @@ function allDone() { return blankOrder().every(filled); }
 const DIR_OPTIONS = [
   { id: 'increasing', text: 'increasing' },
   { id: 'decreasing', text: 'decreasing' },
-  { id: 'neither',    text: 'neither' }
-];
-const WHY_OPTIONS = [
-  { id: 'direction', text: 'change direction' },
-  { id: 'repeat',    text: 'repeat a value' }
+  { id: 'neither',    text: 'neither increasing nor decreasing' }
 ];
 const CMP_OPTIONS = ['gt', 'lt', 'eq'].map(op => ({ id: op, html: K(OPS[op]) }));
+const TERM_OPTIONS = [1, 2, 3, 4, 5].map(i => ({ id: i, html: K('a_' + i) }));
+
+function isTermBlank(b) { return b === 't1a' || b === 't1b' || b === 't2a' || b === 't2b'; }
+function isOpBlank(b) { return b === 'cmp' || b === 'op1' || b === 'op2'; }
 
 function optionsFor(b) {
   if (b === 'dir') return DIR_OPTIONS;
-  if (b === 'why') return WHY_OPTIONS;
-  if (b === 'cmp') return CMP_OPTIONS;
-  if (b === 'ex1' || b === 'ex2')
-    return directionBank().map(id => ({ id: id, html: K(compTex(id)) }));
-  if (b === 'eq')
-    return repeatBank().map(id => ({ id: id, html: K(compTex(id)) }));
+  if (isOpBlank(b)) return CMP_OPTIONS;
+  if (isTermBlank(b)) return TERM_OPTIONS;
   return [];
 }
 function labelFor(b, id) {
@@ -424,15 +408,6 @@ function labelFor(b, id) {
 // ---------------------------------------------------------------- grading
 // Everything is graded against the sequence itself, never against a stored key,
 // so any honest piece of evidence is accepted.
-function pairIsValid() {
-  const a = state.picks.ex1, b = state.picks.ex2;
-  if (!a || !b) return false;
-  if (!compHolds(a) || !compHolds(b)) return false;
-  const da = parseComp(a).op, db = parseComp(b).op;
-  // one must be a rise and the other a fall
-  return (da === 'gt' && db === 'lt') || (da === 'lt' && db === 'gt');
-}
-
 function isRight(b) {
   const p = state.picks;
   if (b === 'dir') return p.dir === trueDirection();
@@ -444,13 +419,17 @@ function isRight(b) {
     for (let i = 1; i < N; i++) if (t[i + 1] !== t[i]) return false;
     return true;
   }
-  if (b === 'why') {
-    if (p.why === 'direction') return changesDirection();
-    if (p.why === 'repeat') return hasRepeat();
-    return false;
+  // the three tiles of a statement stand or fall together: an untrue or vacuous
+  // statement is marked on its own, and if every statement is sound but they
+  // still leave a direction open, the whole set is marked
+  const n = STATEMENTS.findIndex(triple => triple.indexOf(b) > -1);
+  if (n > -1) {
+    const mine = stmtAt(n);
+    if (!mine) return false;
+    const sts = givenStatements();
+    if (!sts.every(isValid)) return isValid(mine);
+    return evidenceOK();
   }
-  if (b === 'ex1' || b === 'ex2') return pairIsValid();
-  if (b === 'eq') return !!p.eq && parseComp(p.eq).op === 'eq' && compHolds(p.eq);
   return false;
 }
 
@@ -491,12 +470,6 @@ function renderDatasetButtons() {
 function renderContext() {
   document.getElementById('context-text').innerHTML =
     'A sequence is defined by ' + K(S().tex) + ' for ' + K('n \\ge 1') + '.';
-  const t = terms();
-  let html = '';
-  for (let i = 1; i <= N; i++) {
-    html += '<span class="term">' + K('a_' + i + ' = ' + t[i]) + '</span>';
-  }
-  document.getElementById('terms').innerHTML = html;
 }
 
 function renderArgument() {
@@ -520,25 +493,22 @@ function renderArgument() {
   }
 
   if (p.dir === 'neither') {
+    // ---- sentence 2: a comparison built from three tiles
     html += lineOpen('s2-nei');
-    html += frag('l2-nei-a', 'because the terms ' + slotHTML('why', 126));
-    if (filled('why')) html += frag('l2-nei-b', '.');
+    html += frag('ev1-a', 'We can tell because ' + slotHTML('t1a', 50));
+    if (filled('t1a')) html += frag('ev1-b', slotHTML('op1', 44));
+    if (filled('op1')) html += frag('ev1-c', slotHTML('t1b', 50));
+    // an equality has already ruled out both directions, so the argument ends here
+    if (filled('t1b') && p.op1 === 'eq') html += frag('ev1-d', '.');
     html += '</div>';
 
-    // ---- sentence 3a: two counterexamples pointing opposite ways
-    if (p.why === 'direction') {
-      html += lineOpen('s3-dir');
-      html += frag('l3-dir-a', 'For example, ' + slotHTML('ex1', 78));
-      if (filled('ex1')) html += frag('l3-dir-b', ' but ' + slotHTML('ex2', 78));
-      if (filled('ex2')) html += frag('l3-dir-c', '.');
-      html += '</div>';
-    }
-
-    // ---- sentence 3b: one equality that holds
-    if (p.why === 'repeat') {
-      html += lineOpen('s3-rep');
-      html += frag('l3-rep-a', 'For example, ' + slotHTML('eq', 78));
-      if (filled('eq')) html += frag('l3-rep-b', '.');
+    // ---- sentence 3: the fact pointing the other way
+    if (filled('t1b') && (p.op1 === 'gt' || p.op1 === 'lt')) {
+      html += lineOpen('s3-nei');
+      html += frag('ev2-a', 'and ' + slotHTML('t2a', 50));
+      if (filled('t2a')) html += frag('ev2-b', slotHTML('op2', 44));
+      if (filled('op2')) html += frag('ev2-c', slotHTML('t2b', 50));
+      if (filled('t2b')) html += frag('ev2-d', '.');
       html += '</div>';
     }
   }
@@ -558,10 +528,12 @@ function renderBank() {
   caption.textContent =
     b === 'dir' ? 'Classify the sequence' :
     b === 'cmp' ? 'Compare the terms' :
-    b === 'why' ? 'Why is it neither?' :
-    b === 'eq'  ? 'Show two terms that are equal' :
-    b === 'ex1' ? 'Give a rise or a fall' :
-                  'Now give one pointing the other way';
+    b === 't1a' ? 'Pick a term to compare' :
+    b === 'op1' ? 'How does it compare?' :
+    b === 't1b' ? 'Compare it with which term?' :
+    b === 't2a' ? 'Now a fact pointing the other way' :
+    b === 'op2' ? 'How does it compare?' :
+                  'Compare it with which term?';
   optionsFor(b).forEach(o => {
     const t = document.createElement('button');
     t.className = 'tile';
@@ -588,12 +560,13 @@ function renderFooter() {
     btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
     btn.textContent = ok ? 'Correct' : 'Try again';
     fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    const sts = givenStatements();
     if (ok) {
       fb.textContent = 'Classified and backed up by evidence — the whole argument holds.';
-    } else if (isRight('dir') && isRight('why') &&
-               state.picks.why === 'direction' && filled('ex2') &&
-               compHolds(state.picks.ex1) && compHolds(state.picks.ex2)) {
-      fb.textContent = 'Both comparisons are true, but they point the same way. Show one rise and one fall.';
+    } else if (sts.some(isVacuous)) {
+      fb.textContent = 'Comparing a term with itself says nothing about the sequence. Pick two different terms.';
+    } else if (isRight('dir') && sts.length === 2 && sts.every(isValid)) {
+      fb.textContent = 'Both comparisons are true, but they point the same way. One has to rise and the other fall.';
     } else {
       fb.textContent = 'Something in the argument does not hold for this sequence. Tap a red box to rethink it.';
     }
@@ -610,13 +583,19 @@ function renderAll() {
 
 // ---------------------------------------------------------------- interaction
 // tapping a filled slot clears it and everything after it
+// the fragment holding a blank is kept, so it does not flash when its own slot
+// is emptied; everything downstream is dropped and animates in again
+const EV1 = ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'ev1-a'];
+const EV2 = EV1.concat(['ev1-b', 'ev1-c', 'line-s3-nei', 'ev2-a']);
 const KEEP_ON_CLEAR = {
   dir: ['line-s1', 'l1a'],
   cmp: ['line-s1', 'l1a', 'l1b', 'line-s2-cmp', 'l2-cmp-a'],
-  why: ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a'],
-  ex1: ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a', 'l2-nei-b', 'line-s3-dir', 'l3-dir-a'],
-  ex2: ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a', 'l2-nei-b', 'line-s3-dir', 'l3-dir-a', 'l3-dir-b'],
-  eq:  ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a', 'l2-nei-b', 'line-s3-rep', 'l3-rep-a']
+  t1a: EV1,
+  op1: EV1.concat(['ev1-b']),
+  t1b: EV1.concat(['ev1-b', 'ev1-c']),
+  t2a: EV2,
+  op2: EV2.concat(['ev2-b']),
+  t2b: EV2.concat(['ev2-b', 'ev2-c'])
 };
 
 function onSlotClick(b) {
@@ -633,7 +612,7 @@ function onSlotClick(b) {
 function resetPicks() { state.picks = {}; state.checked = false; seen = new Set(); }
 
 // optional deep link for sharing a specific state, e.g.
-// ?s=alternating&picks=dir:neither,why:direction,ex1:2gt1,ex2:3lt2&checked=1
+// ?s=alternating&picks=dir:neither,t1a:2,op1:gt,t1b:1,t2a:3,op2:lt,t2b:2&checked=1
 (function applyQuery() {
   const q = new URLSearchParams(location.search);
   if (q.get('s') && SCENARIOS[q.get('s')]) state.key = q.get('s');
