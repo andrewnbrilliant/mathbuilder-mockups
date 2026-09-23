@@ -401,9 +401,18 @@ function startRows() {
   };
 }
 function newTF() {
-  return { hist: [{ rows: startRows(), via: null, changed: null }], row: 'A', pending: null, message: '' };
+  return { sig: modelSig(), hist: [{ rows: startRows(), via: null, changed: null }],
+           row: 'A', pending: null, message: '' };
 }
-function tf() { if (!state.tf) state.tf = newTF(); return state.tf; }
+function modelSig() {
+  const p = state.picks;
+  return [state.key, p.a1, p.b1, p.a2, p.b2].join('|');
+}
+// rebuild whenever the set-up changes, whatever order things ran in
+function tf() {
+  if (!state.tf || state.tf.sig !== modelSig()) state.tf = newTF();
+  return state.tf;
+}
 function curRows() { const h = tf().hist; return h[h.length - 1].rows; }
 function cloneSide(side) { return side.map(t => ({ k: t.k, v: t.v, disp: t.disp })); }
 function cloneRows(rows) {

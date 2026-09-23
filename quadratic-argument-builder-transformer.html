@@ -427,6 +427,7 @@ function builtEq() {
 
 function newTF() {
   return {
+    sig: modelSig(),
     pre: [{ eq: builtEq(), via: null }],
     split: null,
     side: 'left',
@@ -434,8 +435,13 @@ function newTF() {
     message: ''
   };
 }
+function modelSig() {
+  const p = state.picks;
+  return [state.key, p.a, p.b, p.c, p.target].join('|');
+}
 function tf() {
-  if (!state.tf) state.tf = newTF();
+  // rebuild whenever the modelled equation changes, whatever order things ran in
+  if (!state.tf || state.tf.sig !== modelSig()) state.tf = newTF();
   return state.tf;
 }
 function lastEq() {
