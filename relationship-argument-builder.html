@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branching Argument Builder — Relationship Type</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 24px 20px 60px;
+    min-height: 100vh;
+  }
+
+  /* ---------- author controls ---------- */
+  .rail { width: 300px; display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #8a8a94; font-weight: 600; margin-bottom: 10px;
+  }
+  .card p { font-size: 13px; line-height: 1.5; color: #444; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .dataset-btn {
+    display: block; width: 100%; text-align: left;
+    padding: 9px 12px; margin-bottom: 6px;
+    border: 1.5px solid #e2e2e8; border-radius: 9px; background: #fff;
+    font-size: 13px; font-weight: 500; color: #333; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .dataset-btn:hover { border-color: #c9c9d2; background: #fafafb; }
+  .dataset-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  .dataset-btn .sub { display: block; font-size: 11px; font-weight: 400; opacity: 0.65; margin-top: 2px; }
+  .dataset-btn:last-child { margin-bottom: 0; }
+
+  .tree { font-size: 12.5px; line-height: 1.7; color: #444; }
+  .tree code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px; background: #f2f2f5; padding: 1px 4px; border-radius: 4px;
+  }
+  .tree .branch { padding-left: 14px; border-left: 2px solid #e6e6ec; margin: 4px 0 4px 4px; }
+  .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; color: #fff;
+  }
+  .tag.prop { background: #0f8a6a; }
+  .tag.lin  { background: #2f7de1; }
+  .tag.quad { background: #b8860b; }
+  .tag.exp  { background: #b5379a; }
+
+  /* ---------- phone ---------- */
+  .phone {
+    width: 375px; min-height: 760px;
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex; flex-direction: column; position: relative; flex: none;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { width: 55%; height: 100%; background: #c5cc3c; border-radius: 3px; }
+  .bolt { font-size: 16px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* context block (grey card, like the reference) */
+  .context-block { background: #f5f5f7; border-radius: 12px; padding: 16px 14px; }
+  .context-text { font-size: 14px; line-height: 1.5; color: #1a1a1a; margin-bottom: 14px; }
+
+  table.data { border-collapse: collapse; margin: 0 auto; background: #fff; }
+  table.data th, table.data td {
+    border: 1px solid #dcdce2; padding: 7px 10px;
+    font-size: 13.5px; color: #1a1a1a; text-align: left; white-space: nowrap;
+  }
+  table.data th { font-weight: 600; font-size: 13px; }
+  table.data td { font-variant-numeric: tabular-nums; }
+  .unit { color: #8a8a94; font-weight: 400; font-size: 12px; }
+
+  .v-w { color: #2f7de1; font-weight: 700; }
+  .v-h { color: #d6336c; font-weight: 700; }
+  .v-e { color: #0f8a6a; font-weight: 700; }
+
+  /* argument block (white card with border) */
+  .argument-block {
+    border: 1px solid #e4e4ea; border-radius: 12px; padding: 16px 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .line {
+    font-size: 14px; line-height: 2.1; color: #1a1a1a;
+  }
+  /* fragments are inline, so transforms would not apply — fade only */
+  .reveal { animation: fadeIn 0.33s ease both; }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .frag { display: inline; }
+  .frag.reveal .slot { animation: slotUp 0.33s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes slotUp {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 54px; min-height: 28px; padding: 2px 9px; margin: 0 2px;
+    border: 1.5px solid #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s; text-align: center;
+  }
+  .slot.empty { border-style: solid; background: #fafafa; }
+  .slot.active {
+    border-color: #1a1a1a; background: #fff;
+    box-shadow: 0 0 0 3px rgba(26,26,26,0.08);
+  }
+  .slot.filled { border-color: #b9b9c4; background: #f2f2f5; }
+  .slot.right  { border-color: #2ecc40; background: #eafbea; }
+  .slot.wrong  { border-color: #e74c3c; background: #fdeeec; }
+
+  /* bank */
+  .bank-area {
+    background: #f7f8fa; border-top: 1px solid #e8e8e8;
+    padding: 10px 12px 12px; min-height: 96px;
+  }
+  .bank-caption {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-bottom: 8px; text-align: center;
+  }
+  .bank { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+  .tile {
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    padding: 8px 12px; font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.12s;
+    font-family: inherit;
+  }
+  .tile:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .tile:active { transform: scale(0.96); background: #ededf2; }
+
+  .bottom-bar { padding: 10px 16px 20px; display: flex; gap: 10px; align-items: center; }
+  .check-btn {
+    flex: 1; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: default; transition: all 0.3s; font-family: inherit;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; cursor: pointer; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+  .check-btn.incorrect { background: #e74c3c; color: #fff; }
+  .reset-btn {
+    height: 46px; padding: 0 16px; border-radius: 23px;
+    border: 1.5px solid #e0e0e6; background: #fff; color: #666;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #f7f7f9; }
+
+  .feedback {
+    font-size: 13px; line-height: 1.45; padding: 0 16px; min-height: 18px;
+    color: #666; text-align: center;
+  }
+  .feedback.good { color: #17853a; }
+  .feedback.bad { color: #c0392b; }
+</style>
+</head>
+<body>
+
+<!-- ============ left rail: dataset switcher ============ -->
+<div class="rail">
+  <div class="card">
+    <h2>Data set</h2>
+    <div id="dataset-buttons"></div>
+    <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
+      Same question shell, same tiles — only the table changes. The learner's own choices decide
+      which second sentence they get.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Why three columns</h2>
+    <p>Column 2 is the step-to-step change, so the whole argument can be <em>read off the table</em> —
+      no mental subtraction before the reasoning starts.</p>
+    <p><span class="v-h">h</span> constant → linear family.<br>
+       <span class="v-h">h</span> growing by a constant <em>amount</em> → quadratic.<br>
+       <span class="v-h">h</span> growing by a constant <em>factor</em> → exponential.</p>
+  </div>
+</div>
+
+<!-- ============ phone ============ -->
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="context-block">
+      <div class="context-text" id="context-text"></div>
+      <div id="table-holder"></div>
+    </div>
+
+    <div class="argument-block" id="argument"></div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="bank-area">
+    <div class="bank-caption" id="bank-caption">Tap to fill the blank</div>
+    <div class="bank" id="bank"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" id="reset">Reset</button>
+    <button class="check-btn" id="check">Check</button>
+  </div>
+</div>
+
+<!-- ============ right rail: branch map ============ -->
+<div class="rail">
+  <div class="card">
+    <h2>Branch map</h2>
+    <div class="tree">
+      <strong>1.</strong> Each week, the number of new hires <code>?</code>
+      <div class="branch">
+        <strong>stays the same</strong> →<br>
+        <strong>2.</strong> The ratio <code>E / w</code> <code>?</code>, so the relationship is <code>?</code>
+        <div class="branch">
+          is constant → <span class="tag prop">proportional</span><br>
+          varies → <span class="tag lin">linear, not proportional</span>
+        </div>
+      </div>
+      <div class="branch">
+        <strong>changes</strong> →<br>
+        <strong>2.</strong> From week to week, the number of new hires <code>?</code>,
+        so the relationship is <code>?</code>
+        <div class="branch">
+          by a constant amount → <span class="tag quad">quadratic</span><br>
+          by a constant factor → <span class="tag exp">exponential</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Shape of it</h2>
+    <p><strong>Two sentences, three blanks</strong> — reaches all four classifications with nothing
+      redundant on any path.</p>
+    <p>Each sentence pairs an <em>observation</em> blank with a <em>conclusion</em> blank: the learner
+      has to commit to the evidence before naming the relationship.</p>
+    <p>Blanks appear one at a time. Sentence 2 is chosen by the learner's answer to sentence 1 — so a
+      wrong first step leads to a coherent but false argument, not a dead end.</p>
+    <p>The four labels are always the full set, so the conclusion is never a coin flip between two.</p>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- data sets
+const DATASETS = {
+  proportional: {
+    name: 'Proportional',
+    sub: 'E = 4w',
+    context: 'A startup hires new employees each week. Nobody leaves.',
+    rows: [[1,4,4],[2,4,8],[3,4,12],[4,4,16],[5,4,20]],
+    answer: { s1: 'same', s2: 'constant', s3: 'proportional' }
+  },
+  linear: {
+    name: 'Linear, not proportional',
+    sub: 'E = 4w + 12',
+    context: 'A startup hires new employees each week. Nobody leaves.',
+    rows: [[1,4,16],[2,4,20],[3,4,24],[4,4,28],[5,4,32]],
+    answer: { s1: 'same', s2: 'varies', s3: 'linear' }
+  },
+  quadratic: {
+    name: 'Quadratic',
+    sub: 'E = 2w²',
+    context: 'A startup hires new employees each week. Nobody leaves.',
+    rows: [[1,2,2],[2,6,8],[3,10,18],[4,14,32],[5,18,50]],
+    answer: { s1: 'changes', s2: 'amount', s3: 'quadratic' }
+  },
+  exponential: {
+    name: 'Exponential',
+    sub: 'E = 10 · 2ʷ',
+    context: 'A startup hires new employees each week. Nobody leaves.',
+    rows: [[1,10,20],[2,20,40],[3,40,80],[4,80,160],[5,160,320]],
+    answer: { s1: 'changes', s2: 'factor', s3: 'exponential' }
+  }
+};
+
+const OPTIONS = {
+  s1: [
+    { id: 'same',    text: 'stays the same' },
+    { id: 'changes', text: 'changes' }
+  ],
+  s2_linear: [
+    { id: 'constant', text: 'is constant' },
+    { id: 'varies',   text: 'varies' }
+  ],
+  s2_nonlinear: [
+    { id: 'amount', text: 'grows by a constant amount' },
+    { id: 'factor', text: 'grows by a constant factor' }
+  ],
+  s3: [
+    { id: 'proportional', text: 'proportional' },
+    { id: 'linear',       text: 'linear, not proportional' },
+    { id: 'quadratic',    text: 'quadratic' },
+    { id: 'exponential',  text: 'exponential' }
+  ]
+};
+
+const state = { key: 'quadratic', picks: { s1: null, s2: null, s3: null }, checked: false };
+let seenFrags = new Set();
+
+// ---------------------------------------------------------------- helpers
+function optionsFor(slot) {
+  if (slot === 's1') return OPTIONS.s1;
+  if (slot === 's2') return state.picks.s1 === 'same' ? OPTIONS.s2_linear : OPTIONS.s2_nonlinear;
+  return OPTIONS.s3;
+}
+function textFor(slot, id) {
+  const o = optionsFor(slot).find(o => o.id === id);
+  return o ? o.text : '';
+}
+function activeSlot() {
+  if (!state.picks.s1) return 's1';
+  if (!state.picks.s2) return 's2';
+  if (!state.picks.s3) return 's3';
+  return null;
+}
+
+// ---------------------------------------------------------------- rendering
+function renderDatasetButtons() {
+  const host = document.getElementById('dataset-buttons');
+  host.innerHTML = '';
+  Object.entries(DATASETS).forEach(([key, d]) => {
+    const b = document.createElement('button');
+    b.className = 'dataset-btn' + (key === state.key ? ' active' : '');
+    b.innerHTML = d.name + '<span class="sub">' + d.sub + '</span>';
+    b.onclick = () => { state.key = key; resetPicks(); renderAll(); };
+    host.appendChild(b);
+  });
+}
+
+function renderTable() {
+  const d = DATASETS[state.key];
+  document.getElementById('context-text').textContent = d.context;
+  let html = '<table class="data"><tr>' +
+    '<th>Week, <span class="v-w">w</span></th>' +
+    '<th>New hires, <span class="v-h">h</span></th>' +
+    '<th>Total employees, <span class="v-e">E</span></th></tr>';
+  d.rows.forEach(r => {
+    html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>';
+  });
+  html += '</table>';
+  document.getElementById('table-holder').innerHTML = html;
+}
+
+function slotHTML(slot) {
+  const pick = state.picks[slot];
+  let cls = 'slot ' + (pick ? 'filled' : 'empty');
+  if (!pick && activeSlot() === slot) cls += ' active';
+  if (state.checked && pick) {
+    cls += (pick === DATASETS[state.key].answer[slot]) ? ' right' : ' wrong';
+  }
+  const label = pick ? textFor(slot, pick) : '&nbsp;';
+  return '<span class="' + cls + '" data-slot="' + slot + '">' + label + '</span>';
+}
+
+// each fragment has a stable key so it only animates the first time it appears
+function frag(key, html) {
+  const isNew = !seenFrags.has(key);
+  seenFrags.add(key);
+  return '<span class="frag' + (isNew ? ' reveal' : '') + '">' + html + '</span>';
+}
+
+function renderArgument() {
+  const p = state.picks;
+  const ratio = katex.renderToString(
+    '\\dfrac{\\textcolor{#0f8a6a}{E}}{\\textcolor{#2f7de1}{w}}',
+    { throwOnError: false }
+  );
+
+  let html = '<div class="line">';
+  html += frag('l1a', 'Each week, the number of new hires ' + slotHTML('s1'));
+  if (p.s1) html += frag('l1b', '.');
+  html += '</div>';
+
+  if (p.s1) {
+    html += '<div class="line">';
+    if (p.s1 === 'same') {
+      html += frag('l2-lin-a', 'The ratio ' + ratio + ' ' + slotHTML('s2'));
+    } else {
+      html += frag('l2-non-a', 'From week to week, the number of new hires ' + slotHTML('s2'));
+    }
+    if (p.s2) {
+      html += frag('l2b-' + p.s1, ', so the relationship is ' + slotHTML('s3'));
+      if (p.s3) html += frag('l2c-' + p.s1, '.');
+    }
+    html += '</div>';
+  }
+
+  document.getElementById('argument').innerHTML = html;
+  document.querySelectorAll('.slot').forEach(el => {
+    el.onclick = () => clearFrom(el.dataset.slot);
+  });
+}
+
+function renderBank() {
+  const slot = activeSlot();
+  const bank = document.getElementById('bank');
+  const caption = document.getElementById('bank-caption');
+  bank.innerHTML = '';
+  if (!slot) {
+    caption.textContent = 'Tap a boxed word to change it';
+    return;
+  }
+  caption.textContent = slot === 's3' ? 'Name the relationship' : 'Tap to fill the blank';
+  optionsFor(slot).forEach(o => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.textContent = o.text;
+    t.onclick = () => { state.picks[slot] = o.id; state.checked = false; renderAll(); };
+    bank.appendChild(t);
+  });
+}
+
+function renderFooter() {
+  const btn = document.getElementById('check');
+  const fb = document.getElementById('feedback');
+  const done = state.picks.s1 && state.picks.s2 && state.picks.s3;
+  btn.className = 'check-btn' + (done ? ' ready' : '');
+  btn.textContent = 'Check';
+  fb.textContent = '';
+  fb.className = 'feedback';
+
+  if (state.checked) {
+    const a = DATASETS[state.key].answer;
+    const ok = ['s1','s2','s3'].every(s => state.picks[s] === a[s]);
+    btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
+    btn.textContent = ok ? 'Correct' : 'Try again';
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    fb.textContent = ok
+      ? 'Every step holds up — that is a complete argument.'
+      : 'One of your claims does not match the table. Tap a red box to rethink it.';
+  }
+}
+
+function renderAll() {
+  renderDatasetButtons();
+  renderTable();
+  renderArgument();
+  renderBank();
+  renderFooter();
+}
+
+function clearFrom(slot) {
+  const order = ['s1','s2','s3'];
+  let hit = false;
+  order.forEach(s => {
+    if (s === slot) hit = true;
+    if (hit) state.picks[s] = null;
+  });
+  // fragments after this point should animate again when they return
+  if (slot === 's1') seenFrags = new Set(['l1a']);
+  else if (slot === 's2') seenFrags = new Set(['l1a','l1b','l2-lin-a','l2-non-a']);
+  state.checked = false;
+  renderAll();
+}
+
+function resetPicks() {
+  state.picks = { s1: null, s2: null, s3: null };
+  state.checked = false;
+  seenFrags = new Set();
+}
+
+// optional deep link for sharing a specific state, e.g.
+// ?d=exponential&picks=changes,factor,exponential&checked=1
+(function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('d') && DATASETS[q.get('d')]) state.key = q.get('d');
+  const picks = (q.get('picks') || '').split(',').filter(Boolean);
+  ['s1','s2','s3'].forEach((s, i) => { if (picks[i]) state.picks[s] = picks[i]; });
+  if (q.get('checked') === '1' && state.picks.s3) state.checked = true;
+  seenFrags = new Set();
+})();
+
+document.getElementById('check').onclick = () => {
+  if (state.picks.s1 && state.picks.s2 && state.picks.s3) { state.checked = true; renderAll(); }
+};
+document.getElementById('reset').onclick = () => { resetPicks(); renderAll(); };
+
+renderAll();
+</script>
+
+</body>
+</html>
