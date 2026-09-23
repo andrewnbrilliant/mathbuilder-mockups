@@ -319,7 +319,6 @@ const SCENARIOS = {
     numberBank: [-20, -5, 0, 5, 15, 20],
     target: 0,
     targetSentence: 'It hits the ground when',
-    standard: '-5t^2 + 15t + 20 = 0',
     std: { a: -5, b: 15, c: 20 },
     operandBank: [-5, -1, 1, 4, 5, 15, 20],
     disc: 625,
@@ -344,7 +343,6 @@ const SCENARIOS = {
     numberBank: [-20, -5, 0, 5, 10, 20],
     target: 20,
     targetSentence: 'It is 20 m above the ground when',
-    standard: '-5t^2 + 20t - 20 = 0',
     std: { a: -5, b: 20, c: -20 },
     operandBank: [-5, -1, 2, 4, 5, 20],
     disc: 0,
@@ -369,7 +367,6 @@ const SCENARIOS = {
     numberBank: [-30, -5, 0, 5, 20, 30],
     target: 30,
     targetSentence: 'It is 30 m above the ground when',
-    standard: '-5t^2 + 20t - 30 = 0',
     std: { a: -5, b: 20, c: -30 },
     operandBank: [-5, -1, 2, 5, 6, 20, 30],
     disc: -200,
@@ -418,10 +415,19 @@ const ACTIONS = [
   { id: 'sqrt',     label: 'Square root', operand: false }
 ];
 
+function builtEq() {
+  // whatever they modelled, moved into standard form: a t^2 + b t + (c - target) = 0
+  const p = state.picks, st = S().std;
+  const a = typeof p.a === 'number' ? p.a : st.a;
+  const b = typeof p.b === 'number' ? p.b : st.b;
+  const c = typeof p.c === 'number' ? p.c : st.c;
+  const target = typeof p.target === 'number' ? p.target : 0;
+  return { t: 'quad', a: a, b: b, c: c - target, rhs: 0 };
+}
+
 function newTF() {
-  const st = S().std;
   return {
-    pre: [{ eq: { t: 'quad', a: st.a, b: st.b, c: st.c, rhs: 0 }, via: null }],
+    pre: [{ eq: builtEq(), via: null }],
     split: null,
     side: 'left',
     pending: null,
@@ -692,7 +698,7 @@ function renderStages() {
   }
   if (stage1Done()) {
     s1 += frag('standard',
-      '<div class="derived">So we solve &nbsp;' + K(s.standard) + '</div>');
+      '<div class="derived">So we solve &nbsp;' + K(eqTex(builtEq())) + '</div>');
   }
   html += stageCard('model', 1, 'Model the situation', s1);
 

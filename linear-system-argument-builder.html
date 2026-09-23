@@ -390,10 +390,14 @@ const ACTIONS = [
 ];
 
 function startRows() {
-  const s = S();
+  // the workspace solves the system the learner actually set up, right or wrong
+  const s = S(), p = state.picks;
+  const pick = (v, fallback) => (typeof v === 'number' ? v : fallback);
   return {
-    A: { L: [{ k: 1, v: s.v1 }], R: [{ k: s.A.rate, v: s.v2 }, { k: s.A.fee, v: null }] },
-    B: { L: [{ k: 1, v: s.v1 }], R: [{ k: s.B.rate, v: s.v2 }, { k: s.B.fee, v: null }] }
+    A: { L: [{ k: 1, v: s.v1 }],
+         R: [{ k: pick(p.a1, s.A.rate), v: s.v2 }, { k: pick(p.b1, s.A.fee), v: null }] },
+    B: { L: [{ k: 1, v: s.v1 }],
+         R: [{ k: pick(p.a2, s.B.rate), v: s.v2 }, { k: pick(p.b2, s.B.fee), v: null }] }
   };
 }
 function newTF() {
