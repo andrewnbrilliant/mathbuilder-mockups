@@ -112,6 +112,21 @@
   .slot.wrong { border-color: #e74c3c; background: #fdeeec; }
   .slot .katex { font-size: 0.95em; }
 
+  /* solutions the learner may keep or leave off */
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 30px; padding: 2px 11px; margin: 0 3px;
+    border: 1.5px dashed #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #8a8a94; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s;
+  }
+  .toggle .katex { font-size: 0.95em; color: inherit; }
+  .toggle:hover { border-color: #9aa0b0; }
+  .toggle.on { border-style: solid; border-color: #1a1a1a; background: #f2f2f5; color: #1a1a1a; font-weight: 500; }
+  .toggle.right { border-color: #2ecc40; background: #eafbea; color: #1a1a1a; }
+  .toggle.rightoff { border-color: #2ecc40; color: #1e9e31; }
+  .toggle.wrong { border-color: #e74c3c; background: #fdeeec; color: #1a1a1a; }
+
   /* ---------- transformer workspace ---------- */
   .workspace {
     background: #fafafb; border: 1px solid #ededf2; border-radius: 10px;
@@ -163,6 +178,38 @@
   .pill.operand { min-width: 38px; font-variant-numeric: tabular-nums; }
   .pill.cancel { border-color: #ededf2; color: #9a9aa4; padding: 5px 9px; }
   .tf-message { font-size: 11.5px; color: #c0392b; text-align: center; margin-top: 6px; line-height: 1.4; }
+
+  /* ---------- operand keyboard (MathyKeyboard-style) ---------- */
+  .kb-wrap { margin-top: 8px; }
+  .kb-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .kb-field {
+    flex: 1; min-height: 34px; display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid #1a1a1a; border-radius: 8px; background: #fff;
+    box-shadow: 0 0 0 3px rgba(26,26,26,0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 15px; color: #1a1a1a; padding: 2px 8px; letter-spacing: 0.02em;
+  }
+  .kb-field .ph { color: #b5b5be; font-size: 12.5px; font-family: inherit; letter-spacing: 0; }
+  .caret {
+    display: inline-block; width: 1.5px; height: 17px; background: #1a1a1a;
+    margin-left: 1px; animation: caretBlink 1.1s step-end infinite;
+  }
+  @keyframes caretBlink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
+  .kb { display: flex; flex-direction: column; gap: 5px; }
+  .kb-row { display: flex; gap: 5px; }
+  .kb-key {
+    flex: 1; height: 38px; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    background: #fff; font-family: inherit; font-size: 15px; color: #1a1a1a;
+    cursor: pointer; transition: all 0.12s; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .kb-key:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .kb-key:active { transform: scale(0.96); background: #ededf2; }
+  .kb-key.var { font-style: italic; font-family: "Times New Roman", serif; font-size: 17px; }
+  .kb-key.util { background: #f4f4f7; color: #6a6a74; font-size: 14px; }
+  .kb-key.apply { background: #1a1a1a; border-color: #1a1a1a; color: #fff; font-size: 15px; }
+  .kb-key.apply:hover { background: #333; }
+
   .final-label {
     font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
     color: #9a9aa4; font-weight: 600; margin-top: 10px; text-align: center;
@@ -213,20 +260,23 @@
     <h2>Scenario</h2>
     <div id="dataset-buttons"></div>
     <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
-      One question shell. Two providers, a fixed fee and a per-unit rate each — the learner models
-      the pair, solves the system, and then says which provider wins on each side of the crossing.
+      One question shell. Two providers, a fixed fee and a per-unit rate each. Two of these
+      systems cross somewhere sensible, one never crosses at all, and one crosses at a number the
+      situation cannot use.
     </p>
   </div>
 
   <div class="card">
-    <h2>The three moves</h2>
+    <h2>The four moves</h2>
     <p><strong>1 Set up</strong> — turn each sentence into
       <em>c</em> = rate &times; amount + fee. Both equations are built at once; an equation reads
       badly half-finished.</p>
-    <p><strong>2 Solve</strong> — a SystemOfEquationsTransformer-style workspace to do the algebra
-      in, then the two final-answer blanks that are actually graded.</p>
-    <p><strong>3 Interpret</strong> — the crossing is a <em>price</em> and an <em>amount</em>, and
-      it splits the number line into a region each provider owns.</p>
+    <p><strong>2 Compare</strong> — the two rates, then how often the costs can be equal. This is
+      the linear analogue of the quadratic's discriminant step, and it is what lets the parallel
+      case be answered without a "no solution" button inside the workspace.</p>
+    <p><strong>3 Solve</strong> — a SystemOfEquationsTransformer-style workspace, then the two
+      final-answer blanks that are actually graded. Only on the one-solution branch.</p>
+    <p><strong>4 Interpret</strong> — keep or drop the solution, then say what it means.</p>
   </div>
 </div>
 
@@ -263,39 +313,50 @@
   <div class="card">
     <h2>Branch map</h2>
     <div class="tree">
-      <span class="tag set">set up</span> two equations, <code>c = ? d + ?</code> twice
+      <strong>2.</strong> rates are <code>?</code>, so the costs are equal <code>?</code>
       <div class="branch">
-        <span class="tag solve">solve</span> in the workspace, commit to
-        <code>d = ?</code> and <code>c = ?</code>
+        <span class="tag solve">exactly one</span> → solve for <code>d = ?</code>, <code>c = ?</code><br>
+        <strong>4.</strong> the solutions that make sense are <code>?</code>
         <div class="branch">
-          <span class="tag read">interpret</span> both cost <code>?</code> at <code>?</code><br>
-          longer → <code>?</code> is cheaper &nbsp;·&nbsp; shorter → <code>?</code> is cheaper
+          kept → both cost <code>?</code> at <code>?</code>, longer → <code>?</code>, shorter → <code>?</code><br>
+          dropped → no solution makes sense, so <code>?</code>
         </div>
+      </div>
+      <div class="branch">
+        <span class="tag read">no / every</span> → no solve stage at all<br>
+        <strong>3.</strong> the costs are never equal, so <code>?</code>
       </div>
     </div>
     <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
-      The interpret stage is where the algebra stops being a pair of numbers: <em>d</em> is the
-      break-even amount and <em>c</em> is the break-even price, and the sign of the rate difference
-      decides who owns each side of it.
+      Stage 2 is graded against the system the learner actually built, not the scenario's — equal
+      rates with different fees means never, different rates means exactly once.
     </p>
   </div>
 
   <div class="card">
     <h2>Notes</h2>
     <p><strong>Stage 1's four blanks are all visible at once</strong> — an equation reads badly
-      half-built — while the sentence blanks in stage 3 still arrive one at a time.</p>
-    <p>The <strong>rate blanks come before the fee blanks</strong> in tap order, so the learner has
-      to decide which number is "per km" before the easy one.</p>
-    <p>The <strong>graph appears only at the very end</strong>. Shown earlier it gives away the
-      crossing; shown last it turns "longer trips" and "shorter trips" into two shaded regions you
-      can point at.</p>
+      half-built — while the sentence blanks later still arrive one at a time.</p>
+    <p>The <strong>keep-or-drop toggles appear on every branch that produced a solution</strong>,
+      including the ordinary taxi case where the right move is to keep it. If they only showed up
+      in the trick scenario they would be a tell. The line above them is neutral: nothing says why
+      a negative answer might not belong.</p>
+    <p>A <strong>wrong claim at stage 2 still produces a complete argument</strong> that fails on
+      Check, not a dead end. Claim "exactly one" on the parallel scenario and the workspace will
+      happily reduce it to <code>5 = 9</code>.</p>
+    <p>The <strong>graph appears only at the very end</strong>, and it never draws a marker for a
+      solution the learner left off.</p>
   </div>
 
   <div class="card">
     <h2>The solve workspace</h2>
-    <p>Stage 2 is a small <strong>SystemOfEquationsTransformer</strong>: rows <code>A</code> and
+    <p>Stage 3 is a small <strong>SystemOfEquationsTransformer</strong>: rows <code>A</code> and
       <code>B</code>, a bank of action pills, a step row per transformation, and Undo. Instead of
       dragging a pill onto a row, <strong>tap a row to make it active</strong>, then tap a pill.</p>
+    <p>The operand is <strong>typed on a small keyboard</strong> rather than chosen from a list, as
+      it is in the real package — digits <code>1&ndash;5</code> then <code>6&ndash;0</code>, a minus
+      sign, the two variable letters, backspace and confirm. A fixed list of operands always leaves
+      some equation with no sensible move; typing does not.</p>
     <p>The intended route is <em>Substitute A into B → Subtract d → Subtract 3 → Substitute B into A
       → Combine</em>. Add and Subtract take a constant <em>or</em> a variable term, so
       <code>&minus;d</code> is a legal move.</p>
@@ -320,21 +381,21 @@ const SCENARIOS = {
     A: { name: 'EasyTaxis', rate: 2, fee: 3 },
     B: { name: 'SpeedyCars', rate: 1, fee: 8 },
     setupBank: [1, 2, 3, 5, 8, 13],
-    operandBank: ['1', '2', '3', '5', '8', 'd', '2d', 'c'],
     xAns: 5, yAns: 13,
     xBank: [2, 3, 5, 8],
     yBank: [5, 8, 11, 13],
     costBank: [8, 11, 13, 16],
     amountBank: [3, 5, 8],
-    unit: 'km',
-    amountText: n => n + ' km',
+    amountText: n => num(n) + ' km',
     joiner: 'over a distance of',
     longer: 'longer distances',
     shorter: 'shorter distances',
     verb: 'are',
     amountPrompt: 'What distance?',
     xPrompt: 'Solve for the distance',
-    plot: { xMax: 10, yMax: 24, xLabel: 'd (km)', yLabel: 'c ($)' }
+    onceNoun: 'distance',
+    conclAns: 'cross',
+    plot: { xMin: 0, xMax: 10, yMin: 0, yMax: 24, xLabel: 'd (km)', yLabel: 'c ($)' }
   },
 
   gyms: {
@@ -347,23 +408,97 @@ const SCENARIOS = {
     A: { name: 'FitPlus', rate: 10, fee: 20 },
     B: { name: 'GymGo', rate: 5, fee: 50 },
     setupBank: [5, 10, 20, 30, 50, 80],
-    operandBank: ['5', '10', '20', '30', '50', 'm', '5m', 'c'],
     xAns: 6, yAns: 80,
     xBank: [3, 5, 6, 10],
     yBank: [30, 50, 80, 110],
     costBank: [50, 70, 80, 110],
     amountBank: [5, 6, 10],
-    unit: 'months',
-    amountText: n => n + (n === 1 ? ' month' : ' months'),
+    amountText: n => num(n) + (n === 1 ? ' month' : ' months'),
     joiner: 'after',
     longer: 'longer memberships',
     shorter: 'shorter memberships',
     verb: 'is',
     amountPrompt: 'After how long?',
     xPrompt: 'Solve for the number of months',
-    plot: { xMax: 12, yMax: 160, xLabel: 'm (months)', yLabel: 'c ($)' }
+    onceNoun: 'membership length',
+    conclAns: 'cross',
+    plot: { xMin: 0, xMax: 12, yMin: 0, yMax: 160, xLabel: 'm (months)', yLabel: 'c ($)' }
+  },
+
+  scooters: {
+    name: 'Scooters',
+    sub: 'c = 2d + 5 and c = 2d + 9',
+    context: 'ZipScoot charges a $5 unlock fee plus $2 per km. GoWheels charges a $9 unlock fee ' +
+             'plus $2 per km. When do they cost the same?',
+    legend: 'c = cost in dollars, d = distance in km',
+    v1: 'c', v2: 'd',
+    A: { name: 'ZipScoot', rate: 2, fee: 5 },
+    B: { name: 'GoWheels', rate: 2, fee: 9 },
+    setupBank: [1, 2, 4, 5, 9, 14],
+    xAns: null, yAns: null,
+    xBank: [0, 2, 4, 7],
+    yBank: [5, 9, 14, 18],
+    costBank: [5, 9, 14, 23],
+    amountBank: [0, 2, 4],
+    amountText: n => num(n) + ' km',
+    joiner: 'over a distance of',
+    longer: 'longer distances',
+    shorter: 'shorter distances',
+    verb: 'is',
+    amountPrompt: 'What distance?',
+    xPrompt: 'Solve for the distance',
+    onceNoun: 'distance',
+    conclAns: 'aAlways',
+    plot: { xMin: 0, xMax: 8, yMin: 0, yMax: 30, xLabel: 'd (km)', yLabel: 'c ($)' }
+  },
+
+  posters: {
+    name: 'Posters',
+    sub: 'c = 3n + 8 and c = 2n + 3',
+    context: 'InkFast charges an $8 setup fee plus $3 per poster. PrintPro charges a $3 setup fee ' +
+             'plus $2 per poster. When do they cost the same?',
+    legend: 'c = cost in dollars, n = number of posters',
+    v1: 'c', v2: 'n',
+    A: { name: 'InkFast', rate: 3, fee: 8 },
+    B: { name: 'PrintPro', rate: 2, fee: 3 },
+    setupBank: [1, 2, 3, 5, 8, 11],
+    xAns: -5, yAns: -7,
+    xBank: [-5, -2, 5, 11],
+    yBank: [-7, -1, 7, 23],
+    costBank: [-7, 3, 8, 14],
+    amountBank: [-5, 2, 5],
+    amountText: n => num(n) + ' posters',
+    joiner: 'over an order of',
+    longer: 'larger orders',
+    shorter: 'smaller orders',
+    verb: 'is',
+    amountPrompt: 'How many posters?',
+    xPrompt: 'Solve for the number of posters',
+    onceNoun: 'order size',
+    conclAns: 'bAlways',
+    plot: { xMin: -8, xMax: 8, yMin: -20, yMax: 36, xLabel: 'n (posters)', yLabel: 'c ($)' }
   }
 };
+
+// the three ways two lines can meet, offered in full in every scenario
+const HOWMANY = [
+  { id: 'one',   text: s => 'at exactly one ' + s.onceNoun },
+  { id: 'never', text: s => 'at no ' + s.onceNoun },
+  { id: 'every', text: s => 'at every ' + s.onceNoun }
+];
+const RATES = [
+  { id: 'same', text: 'the same' },
+  { id: 'diff', text: 'different' }
+];
+// one family of four, generated per scenario, exactly one of them true
+function conclOptions(s) {
+  return [
+    { id: 'aAlways', text: s.A.name + ' ' + s.verb + ' always cheaper' },
+    { id: 'bAlways', text: s.B.name + ' ' + s.verb + ' always cheaper' },
+    { id: 'same',    text: 'they always cost the same' },
+    { id: 'cross',   text: 'they cost the same at one ' + s.onceNoun }
+  ];
+}
 
 const state = { key: 'taxis', picks: {}, checked: false, tf: null };
 let seen = new Set();
@@ -402,7 +537,7 @@ function startRows() {
 }
 function newTF() {
   return { sig: modelSig(), hist: [{ rows: startRows(), via: null, changed: null }],
-           row: 'A', pending: null, message: '' };
+           row: 'A', pending: null, buf: '', message: '' };
 }
 function modelSig() {
   const p = state.picks;
@@ -414,7 +549,7 @@ function tf() {
   return state.tf;
 }
 function curRows() { const h = tf().hist; return h[h.length - 1].rows; }
-function cloneSide(side) { return side.map(t => ({ k: t.k, v: t.v, disp: t.disp })); }
+function cloneSide(side) { return side.map(t => ({ k: t.k, v: t.v, disp: t.disp, sgn: t.sgn })); }
 function cloneRows(rows) {
   return { A: { L: cloneSide(rows.A.L), R: cloneSide(rows.A.R) },
            B: { L: cloneSide(rows.B.L), R: cloneSide(rows.B.R) } };
@@ -471,12 +606,15 @@ function solvedValue(row, v) {
 function substSide(terms, v, expr) {
   const out = [];
   terms.forEach(t => {
-    if (t.v !== v) { out.push({ k: t.k, v: t.v, disp: t.disp }); return; }
+    if (t.v !== v) { out.push({ k: t.k, v: t.v, disp: t.disp, sgn: t.sgn }); return; }
     if (expr.length === 1 && !expr[0].v) {
       const n = expr[0].k;
-      const shown = n < 0 ? '(' + num(n) + ')' : String(n);
-      const mag = Math.abs(t.k) === 1 ? shown : String(Math.abs(t.k)) + '(' + (n < 0 ? num(n) : n) + ')';
-      out.push({ k: t.k * n, v: null, disp: mag });
+      const inner = n < 0 ? '(-' + Math.abs(n) + ')' : String(n);
+      const mag = Math.abs(t.k) === 1 ? inner : String(Math.abs(t.k)) + '(' + (n < 0 ? '-' : '') +
+        Math.abs(n) + ')';
+      // the parenthesised value carries its own sign, so the leading sign of a
+      // substituted term is the sign of its coefficient, not of the product
+      out.push({ k: t.k * n, v: null, disp: mag, sgn: t.k < 0 ? -1 : 1 });
     } else {
       expr.forEach(e => out.push({ k: t.k * e.k, v: e.v }));
     }
@@ -571,31 +709,75 @@ function sideTex(terms) {
     if (t.disp) mag = t.disp;
     else if (t.v) mag = (Math.abs(t.k) === 1 ? '' : String(Math.abs(t.k))) + t.v;
     else mag = String(Math.abs(t.k));
-    if (out === '') out = (t.k < 0 && !t.disp ? '-' : (t.k < 0 ? '-' : '')) + mag;
-    else out += (t.k < 0 ? ' - ' : ' + ') + mag;
+    const neg = t.disp ? t.sgn < 0 : t.k < 0;
+    if (out === '') out = (neg ? '-' : '') + mag;
+    else out += (neg ? ' - ' : ' + ') + mag;
   });
   return out === '' ? '0' : out;
 }
 function rowTex(row) { return sideTex(row.L) + ' = ' + sideTex(row.R); }
 
 // ---------------------------------------------------------------- blanks
-const ORDER = ['a1', 'b1', 'a2', 'b2', 'sx', 'sy', 'i2', 'i3', 'i4', 'i5'];
-function blankOrder() { return ORDER; }
+// every blank that can ever exist, in the order it would be asked
+const FULL = ['a1', 'b1', 'a2', 'b2', 'rates', 'howmany',
+              'sx', 'sy', 'accept', 'i2', 'i3', 'i4', 'i5', 'concl'];
+
+// the learner's claim about how many times the costs are equal rewrites the rest
+function blankOrder() {
+  const o = ['a1', 'b1', 'a2', 'b2', 'rates', 'howmany'];
+  const h = state.picks.howmany;
+  if (h === 'one') {
+    o.push('sx', 'sy', 'accept');
+    if (filled('accept')) {
+      if (keptSolutions().length > 0) o.push('i2', 'i3', 'i4', 'i5');
+      else o.push('concl');
+    }
+  } else if (h === 'never' || h === 'every') {
+    o.push('concl');
+  }
+  return o;
+}
 function filled(b) { return state.picks[b] !== undefined && state.picks[b] !== null; }
-function activeBlank() { return ORDER.find(b => !filled(b)) || null; }
+function activeBlank() { return blankOrder().find(b => !filled(b)) || null; }
 function stage1Done() { return ['a1', 'b1', 'a2', 'b2'].every(filled); }
-function stage2Done() { return stage1Done() && filled('sx') && filled('sy'); }
-function allDone() { return ORDER.every(filled); }
+function stage2Done() { return stage1Done() && filled('rates') && filled('howmany'); }
+function solveNeeded() { return state.picks.howmany === 'one'; }
+function stage3Done() {
+  if (!stage2Done()) return false;
+  return solveNeeded() ? (filled('sx') && filled('sy')) : true;
+}
+function allDone() { return blankOrder().every(filled); }
+
+// the solution the learner committed to, and the subset they chose to keep
+function offeredSolutions() {
+  const v = state.picks.sx;
+  return typeof v === 'number' ? [v] : [];
+}
+function keptSolutions() {
+  const sel = state.picks.acceptSel || [];
+  return offeredSolutions().filter(v => sel.includes(v));
+}
+
+// what the learner's own two equations imply, right or wrong
+function claimTruth() {
+  const p = state.picks;
+  if (p.a1 === p.a2) return { rates: 'same', howmany: p.b1 === p.b2 ? 'every' : 'never' };
+  return { rates: 'diff', howmany: 'one' };
+}
 
 function optionsFor(b) {
   const s = S();
   if (['a1', 'b1', 'a2', 'b2'].includes(b)) return s.setupBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'rates') return RATES;
+  if (b === 'howmany') return HOWMANY.map(o => ({ id: o.id, text: o.text(s) }));
   if (b === 'sx') return s.xBank.map(n => ({ id: n, text: num(n) }));
   if (b === 'sy') return s.yBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'accept') return [{ id: 'done', text: 'Confirm' }];
   if (b === 'i4' || b === 'i5')
     return [{ id: 'A', text: s.A.name }, { id: 'B', text: s.B.name }];
-  if (b === 'i2') return s.costBank.map(n => ({ id: n, text: '$' + n }));
+  if (b === 'i2') return s.costBank.map(n => ({ id: n, text: '$' + num(n) }));
   if (b === 'i3') return s.amountBank.map(n => ({ id: n, text: s.amountText(n) }));
+  if (b === 'concl') return conclOptions(s);
   return [];
 }
 function textFor(b, id) {
@@ -609,12 +791,22 @@ function isRight(b) {
   if (b === 'b1') return p.b1 === s.A.fee;
   if (b === 'a2') return p.a2 === s.B.rate;
   if (b === 'b2') return p.b2 === s.B.fee;
+  // graded against the system the learner built, not the one they should have
+  if (b === 'rates')   return p.rates === claimTruth().rates;
+  if (b === 'howmany') return p.howmany === claimTruth().howmany;
   if (b === 'sx') return p.sx === s.xAns;
   if (b === 'sy') return p.sy === s.yAns;
+  if (b === 'accept') {
+    const want = offeredSolutions().filter(v => v >= 0).slice().sort((x, y) => x - y);
+    const got = keptSolutions().slice().sort((x, y) => x - y);
+    return got.length === want.length && got.every((v, i) => v === want[i]);
+  }
   if (b === 'i2') return p.i2 === s.yAns;
   if (b === 'i3') return p.i3 === s.xAns;
-  if (b === 'i4') return p.i4 === 'B';   // smaller per-unit rate wins over the long run
-  if (b === 'i5') return p.i5 === 'A';
+  // over the long run the smaller per-unit rate wins
+  if (b === 'i4') return s.A.rate !== s.B.rate && p.i4 === (s.A.rate < s.B.rate ? 'A' : 'B');
+  if (b === 'i5') return s.A.rate !== s.B.rate && p.i5 === (s.A.rate < s.B.rate ? 'B' : 'A');
+  if (b === 'concl') return p.concl === s.conclAns;
   return false;
 }
 
@@ -662,41 +854,95 @@ function renderStages() {
       K(s.v1 + ' =') + slotHTML(ka) + K(s.v2 + ' \\; +') + slotHTML(kb) + '</div>';
   });
   if (stage1Done()) {
-    s1 += frag('sys', '<div class="derived">Two equations, two unknowns — solve the system.</div>');
+    s1 += frag('sys', '<div class="derived">Two equations, two unknowns.</div>');
   }
   html += stageCard('setup', 1, 'Set up the two costs', s1);
 
-  // ---- stage 2: solve, with a transformer workspace as the working-out
+  // ---- stage 2: compare the rates — the linear analogue of a discriminant
   if (stage1Done()) {
-    let s2 = workspaceHTML();
-    s2 += '<div class="final-label">Final answer</div>';
-    s2 += '<div class="eq">' + K(s.v2 + ' =') + slotHTML('sx') +
-          '<span style="display:inline-block;width:12px"></span>' +
-          K(s.v1 + ' =') + slotHTML('sy') + '</div>';
-    html += stageCard('solve', 2, 'Solve the system', s2);
+    let cmp = 'The two rates are ' + slotHTML('rates', 86);
+    if (filled('rates')) cmp += frag('howmany',
+      ', so the costs are equal ' + slotHTML('howmany', 158));
+    if (filled('howmany')) cmp += frag('howmanydot', '.');
+    html += stageCard('compare', 2, 'Compare the rates', '<div class="line">' + cmp + '</div>');
   }
 
-  // ---- stage 3: interpret
-  if (stage2Done()) {
-    let s3 = '';
-    let l1 = s.A.name + ' and ' + s.B.name + ' both cost ' + slotHTML('i2', 58);
-    if (filled('i2')) l1 += frag('i3', ' ' + s.joiner + ' ' + slotHTML('i3', 76));
-    if (filled('i3')) l1 += frag('i3dot', '.');
-    s3 += '<div class="line">' + l1 + '</div>';
+  // ---- stage 3: solve, with a transformer workspace as the working-out
+  if (stage2Done() && solveNeeded()) {
+    let s3 = workspaceHTML();
+    s3 += '<div class="final-label">Final answer</div>';
+    s3 += '<div class="eq">' + K(s.v2 + ' =') + slotHTML('sx') +
+          '<span style="display:inline-block;width:12px"></span>' +
+          K(s.v1 + ' =') + slotHTML('sy') + '</div>';
+    html += stageCard('solve', 3, 'Solve the system', s3);
+  }
 
-    if (filled('i3')) {
-      let l2 = 'For ' + s.longer + ', ' + slotHTML('i4', 108) + ' ' + s.verb + ' cheaper,';
-      if (filled('i4')) l2 += frag('i5', ' while for ' + s.shorter + ', ' +
-        slotHTML('i5', 108) + ' ' + s.verb + ' cheaper.');
-      s3 += frag('line2', '<div class="line">' + l2 + '</div>');
+  // ---- final stage: interpret, four possible endings
+  if (stage3Done()) {
+    const n = solveNeeded() ? 4 : 3;
+    const h = p.howmany;
+    let s4 = '';
+
+    if (h === 'one') {
+      // the same neutral line on every branch that produced a solution
+      s4 += frag('acc', '<div class="line">The solutions that make sense here are ' +
+        acceptTogglesHTML() + '</div>');
+      if (filled('accept') && keptSolutions().length > 0) {
+        let l1 = s.A.name + ' and ' + s.B.name + ' both cost ' + slotHTML('i2', 58);
+        if (filled('i2')) l1 += frag('i3', ' ' + s.joiner + ' ' + slotHTML('i3', 84));
+        if (filled('i3')) l1 += frag('i3dot', '.');
+        s4 += frag('line1', '<div class="line">' + l1 + '</div>');
+        if (filled('i3')) {
+          let l2 = 'For ' + s.longer + ', ' + slotHTML('i4', 108) + ' ' + s.verb + ' cheaper,';
+          if (filled('i4')) l2 += frag('i5', ' while for ' + s.shorter + ', ' +
+            slotHTML('i5', 108) + ' ' + s.verb + ' cheaper.');
+          s4 += frag('line2', '<div class="line">' + l2 + '</div>');
+        }
+      } else if (filled('accept')) {
+        s4 += frag('concl-drop', '<div class="line">No solution here makes sense, so ' +
+          slotHTML('concl', 190) + '.</div>');
+      }
+    } else if (h === 'never') {
+      s4 += frag('concl-never', '<div class="line">The costs are never equal, so ' +
+        slotHTML('concl', 190) + '.</div>');
+    } else {
+      s4 += frag('concl-every', '<div class="line">The costs are equal at every ' + s.onceNoun +
+        ', so ' + slotHTML('concl', 190) + '.</div>');
     }
-    if (filled('i5')) s3 += frag('plot', '<div class="plot">' + plotSVG() + '</div>');
-    html += stageCard('interpret', 3, 'Interpret the crossing', s3);
+
+    if (allDone()) s4 += frag('plot', '<div class="plot">' + plotSVG() + '</div>');
+    html += stageCard('interpret-' + h, n, 'Interpret', s4);
   }
 
   document.getElementById('stages').innerHTML = html;
   document.querySelectorAll('.slot').forEach(el => { el.onclick = () => onSlotClick(el.dataset.blank); });
+  document.querySelectorAll('[data-accept]').forEach(el => {
+    el.onclick = () => {
+      const v = Number(el.dataset.accept);
+      const cur = state.picks.acceptSel || [];
+      state.picks.acceptSel = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
+      state.checked = false;
+      renderAll();
+    };
+  });
   wireWorkspace();
+}
+
+// the learner picks which of their own solutions to keep — nothing here says
+// why one of them might not belong
+function acceptTogglesHTML() {
+  const s = S(), sel = state.picks.acceptSel || [];
+  return offeredSolutions().map(v => {
+    const on = sel.includes(v);
+    let cls = 'toggle' + (on ? ' on' : '');
+    if (state.checked && filled('accept')) {
+      const shouldBeOn = v >= 0;
+      if (on !== shouldBeOn) cls += ' wrong';
+      else cls += on ? ' right' : ' rightoff';
+    }
+    return '<span class="' + cls + '" data-accept="' + v + '">' +
+      K(s.v2 + ' = ' + (v < 0 ? '-' + Math.abs(v) : v)) + '</span>';
+  }).join('');
 }
 
 // ---- the transformer workspace: step rows, action pills, undo
@@ -728,11 +974,7 @@ function workspaceHTML() {
   w += '</div>';
 
   if (T.pending) {
-    const act = ACTIONS.find(a => a.id === T.pending);
-    w += '<div class="operand-bar"><span class="operand-label">' + act.label + '</span>' +
-      S().operandBank.map(o =>
-        '<button class="pill operand" data-operand="' + o + '">' + opText(o) + '</button>').join('') +
-      '<button class="pill cancel" data-cancel="1">&times;</button></div>';
+    w += keyboardHTML();
   } else {
     w += '<div class="actions-bank">' +
       ACTIONS.map(a => '<button class="pill" data-action="' + a.id + '">' + a.label + '</button>').join('') +
@@ -742,22 +984,76 @@ function workspaceHTML() {
   return w;
 }
 
+// The real package types the operand into a MathyKeyboard field rather than
+// picking it from a list, so no equation is left without a sensible operand.
+function keyboardHTML() {
+  const T = tf(), s = S();
+  const act = ACTIONS.find(a => a.id === T.pending);
+  const shown = T.buf === ''
+    ? '<span class="ph">type a number or a term</span>'
+    : T.buf.replace(/-/g, '−');
+  const key = (ch, label, cls) =>
+    '<button class="kb-key' + (cls ? ' ' + cls : '') + '" data-key="' + ch + '">' + label + '</button>';
+
+  return '<div class="kb-wrap">' +
+    '<div class="kb-head">' +
+      '<span class="operand-label">' + act.label + '</span>' +
+      '<span class="kb-field">' + shown + '<span class="caret"></span></span>' +
+      '<button class="pill cancel" data-cancel="1">&times;</button>' +
+    '</div>' +
+    '<div class="kb">' +
+      '<div class="kb-row">' + ['1','2','3','4','5'].map(d => key(d, d)).join('') + '</div>' +
+      '<div class="kb-row">' + ['6','7','8','9','0'].map(d => key(d, d)).join('') + '</div>' +
+      '<div class="kb-row">' +
+        key('-', '&minus;') +
+        key(s.v1, s.v1, 'var') +
+        key(s.v2, s.v2, 'var') +
+        key('back', '&#9003;', 'util') +
+        key('apply', '&#10003;', 'apply') +
+      '</div>' +
+    '</div></div>';
+}
+
+// everything parseOperand accepts — 3, -3, d, 2d, -2d, 12 — and nothing else
+function validateOperand(buf) {
+  const s = S();
+  if (buf === '') return 'Type something first — a number like 3, or a term like 2' + s.v2 + '.';
+  if (buf === '-') return 'A minus sign on its own is not an operand — type a number or a term after it.';
+  const m = /^(-?)(\d*)([a-z]?)$/.exec(buf);
+  if (!m) return 'That is not a number or a term — try something like 3, −3, ' + s.v2 +
+    ' or 2' + s.v2 + '.';
+  if (m[3] && m[3] !== s.v1 && m[3] !== s.v2)
+    return 'There is no ' + m[3] + ' in this system — the variables here are ' + s.v1 +
+      ' and ' + s.v2 + '.';
+  if (!m[2] && !m[3]) return 'Type something first — a number like 3, or a term like 2' + s.v2 + '.';
+  return '';
+}
+
 function wireWorkspace() {
   const T = tf();
+  document.querySelectorAll('[data-key]').forEach(el => {
+    el.onclick = () => {
+      const k = el.dataset.key;
+      if (k === 'back') { T.buf = T.buf.slice(0, -1); T.message = ''; }
+      else if (k === 'apply') {
+        const bad = validateOperand(T.buf);
+        if (bad) { T.message = bad; }
+        else { T.message = applyAction(T.pending, T.buf); T.pending = null; T.buf = ''; }
+      } else { T.buf += k; T.message = ''; }
+      renderAll();
+    };
+  });
   document.querySelectorAll('[data-action]').forEach(el => {
     el.onclick = () => {
       const a = ACTIONS.find(x => x.id === el.dataset.action);
       T.message = '';
-      if (a.operand) T.pending = a.id;
+      if (a.operand) { T.pending = a.id; T.buf = ''; }
       else T.message = applyAction(a.id, null);
       renderAll();
     };
   });
-  document.querySelectorAll('[data-operand]').forEach(el => {
-    el.onclick = () => { T.message = applyAction(T.pending, el.dataset.operand); T.pending = null; renderAll(); };
-  });
   const cancel = document.querySelector('[data-cancel]');
-  if (cancel) cancel.onclick = () => { T.pending = null; renderAll(); };
+  if (cancel) cancel.onclick = () => { T.pending = null; T.buf = ''; T.message = ''; renderAll(); };
   const undo = document.querySelector('[data-undo]');
   if (undo) undo.onclick = () => { undoStep(); T.message = ''; renderAll(); };
   document.querySelectorAll('[data-row]').forEach(el => {
@@ -769,8 +1065,9 @@ function wireWorkspace() {
 function plotSVG() {
   const s = S(), pl = s.plot;
   const W = 320, H = 200, ml = 34, mr = 12, mt = 16, mb = 30;
-  const X = x => ml + x / pl.xMax * (W - ml - mr);
-  const Y = y => mt + (pl.yMax - y) / pl.yMax * (H - mt - mb);
+  const xMin = pl.xMin || 0, yMin = pl.yMin || 0;
+  const X = x => ml + (x - xMin) / (pl.xMax - xMin) * (W - ml - mr);
+  const Y = y => mt + (pl.yMax - y) / (pl.yMax - yMin) * (H - mt - mb);
   // plot the system the learner set up, and cross it where their lines actually cross
   const p = state.picks;
   const pick = (v, fallback) => (typeof v === 'number' ? v : fallback);
@@ -780,12 +1077,16 @@ function plotSVG() {
   const fB = x => rB * x + kB;
   const cA = '#2f7de1', cB = '#e0731a';
   const parallel = rA === rB;
+  const identical = parallel && kA === kB;
   const xi = parallel ? 0 : (kB - kA) / (rA - rB);
   const yi = fA(xi);
-  const inView = !parallel && xi >= 0 && xi <= pl.xMax && yi >= 0 && yi <= pl.yMax;
-  const fmt = v => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100));
+  const inWindow = !parallel && xi >= xMin && xi <= pl.xMax && yi >= yMin && yi <= pl.yMax;
+  const fmt = v => (Number.isInteger(v) ? num(v) : num(Math.round(v * 100) / 100));
+  // a marker is only drawn for a solution the learner actually kept
+  const kept = keptSolutions();
+  const showCrossing = inWindow && kept.length > 0;
 
-  const line = (f, col) => '<line x1="' + X(0).toFixed(1) + '" y1="' + Y(f(0)).toFixed(1) +
+  const line = (f, col) => '<line x1="' + X(xMin).toFixed(1) + '" y1="' + Y(f(xMin)).toFixed(1) +
     '" x2="' + X(pl.xMax).toFixed(1) + '" y2="' + Y(f(pl.xMax)).toFixed(1) +
     '" stroke="' + col + '" stroke-width="2.2"/>';
 
@@ -793,29 +1094,41 @@ function plotSVG() {
     '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" font-size="9.5" ' +
     'paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" fill="' + col + '">' +
     txt + '</text>';
+  const band = (x1, x2, fill) => '<rect x="' + x1.toFixed(1) + '" y="' + mt + '" width="' +
+    Math.max(0, x2 - x1).toFixed(1) + '" height="' + (H - mt - mb) + '" fill="' + fill + '"/>';
 
-  const regions = !inView ? '' :
-    '<rect x="' + X(0) + '" y="' + mt + '" width="' + (X(xi) - X(0)) + '" height="' + (H - mt - mb) +
-      '" fill="#eaf2fd"/>' +
-    '<rect x="' + X(xi) + '" y="' + mt + '" width="' + (X(pl.xMax) - X(xi)) + '" height="' + (H - mt - mb) +
-      '" fill="#fdf1e7"/>' +
-    halo(((X(0) + X(xi)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#2f7de1',
-      (rA < rB ? s.B.name : s.A.name) + ' cheaper') +
-    halo(((X(xi) + X(pl.xMax)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#c2610f',
-      (rA < rB ? s.A.name : s.B.name) + ' cheaper');
+  // whoever is lower just past zero owns the whole sensible stretch
+  const lowerName = identical ? null : (fA(pl.xMax) < fB(pl.xMax) ? s.A.name : s.B.name);
+  const lowerIsA = lowerName === s.A.name;
 
-  const crossing = !inView ? (parallel
-      ? halo((W / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#8a8a94',
-             'these lines never cross')
-      : '') :
+  let regions;
+  if (showCrossing) {
+    regions = band(X(xi >= 0 ? 0 : xMin), X(xi), '#eaf2fd') +
+      band(X(xi), X(pl.xMax), '#fdf1e7') +
+      halo(((X(Math.max(xMin, 0)) + X(xi)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#2f7de1',
+        (rA < rB ? s.B.name : s.A.name) + ' cheaper') +
+      halo(((X(xi) + X(pl.xMax)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#c2610f',
+        (rA < rB ? s.A.name : s.B.name) + ' cheaper');
+  } else {
+    // one band over the stretch that can actually happen
+    regions = band(X(0), X(pl.xMax), identical ? '#f2f2f5' : (lowerIsA ? '#eaf2fd' : '#fdf1e7')) +
+      halo(((X(0) + X(pl.xMax)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle',
+        identical ? '#8a8a94' : (lowerIsA ? '#2f7de1' : '#c2610f'),
+        identical ? 'always the same cost' : lowerName + ' cheaper throughout');
+  }
+
+  const crossing = !showCrossing ? '' :
     '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(xi) + '" y2="' + Y(0) +
       '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>' +
-    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(0) + '" y2="' + Y(yi) +
+    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(xMin) + '" y2="' + Y(yi) +
       '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>';
 
-  const marker = !inView ? '' :
-    '<circle cx="' + X(xi) + '" cy="' + Y(yi) + '" r="5" fill="#2ecc40" stroke="#1e9e31" stroke-width="2"/>' +
-    halo((X(xi) + 8).toFixed(1), (Y(yi) - 13).toFixed(1), 'start', '#17853a',
+  // green when the kept solution sits in the sensible range, hollow red when it does not
+  const ok = xi >= 0;
+  const marker = !showCrossing ? '' :
+    '<circle cx="' + X(xi) + '" cy="' + Y(yi) + '" r="5" fill="' + (ok ? '#2ecc40' : '#fff') +
+      '" stroke="' + (ok ? '#1e9e31' : '#e74c3c') + '" stroke-width="2"/>' +
+    halo((X(xi) + 8).toFixed(1), (Y(yi) - 13).toFixed(1), 'start', ok ? '#17853a' : '#c0392b',
       '(' + fmt(xi) + ', ' + fmt(yi) + ')') +
     halo((X(xi)).toFixed(1), (Y(0) + 12).toFixed(1), 'middle', '#6a6a74', fmt(xi)) +
     halo((ml - 3).toFixed(1), (Y(yi) + 3).toFixed(1), 'end', '#6a6a74', '$' + fmt(yi));
@@ -852,8 +1165,12 @@ function renderBank() {
   if (!b) { caption.textContent = 'Tap any boxed answer to change it'; return; }
   caption.textContent =
     ['a1', 'b1', 'a2', 'b2'].includes(b) ? 'Build both equations' :
+    b === 'rates'   ? 'Compare the two rates' :
+    b === 'howmany' ? 'How often are the costs equal?' :
     b === 'sx' ? s.xPrompt :
     b === 'sy' ? 'Solve for the cost' :
+    b === 'accept' ? 'Tap the solutions you want to keep' :
+    b === 'concl' ? 'Say what it means' :
     b === 'i2' ? 'How much?' :
     b === 'i3' ? s.amountPrompt : 'Which company?';
   optionsFor(b).forEach(o => {
@@ -868,17 +1185,18 @@ function renderBank() {
 function renderFooter() {
   const btn = document.getElementById('check');
   const fb = document.getElementById('feedback');
+  const order = blankOrder();
   const done = allDone();
 
   document.getElementById('progress').style.width =
-    Math.round(ORDER.filter(filled).length / ORDER.length * 100) + '%';
+    Math.round(order.filter(filled).length / order.length * 100) + '%';
 
   btn.className = 'check-btn' + (done ? ' ready' : '');
   btn.textContent = 'Check';
   fb.textContent = ''; fb.className = 'feedback';
 
   if (state.checked) {
-    const ok = ORDER.every(isRight);
+    const ok = order.every(isRight);
     btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
     btn.textContent = ok ? 'Correct' : 'Try again';
     fb.className = 'feedback ' + (ok ? 'good' : 'bad');
@@ -904,13 +1222,14 @@ function renderAll() {
 
 // ---------------------------------------------------------------- interaction
 function onSlotClick(b) {
-  const i = ORDER.indexOf(b);
+  const i = FULL.indexOf(b);
   if (i === -1) return;
-  ORDER.slice(i).forEach(k => { delete state.picks[k]; });
+  FULL.slice(i).forEach(k => { delete state.picks[k]; });
+  if (i <= FULL.indexOf('accept')) delete state.picks.acceptSel;
   const keep = new Set(['stage-setup']);
-  if (i > 3) keep.add('sys').add('stage-solve');
+  if (i > FULL.indexOf('b2')) keep.add('sys').add('stage-compare');
+  if (i > FULL.indexOf('howmany')) keep.add('howmany').add('howmanydot').add('stage-solve');
   seen = keep;
-  if (i <= ORDER.indexOf('b2')) state.tf = null;   // remodelling invalidates the working-out
   state.checked = false;
   renderAll();
 }
@@ -925,7 +1244,8 @@ function resetPicks() { state.picks = {}; state.checked = false; state.tf = null
     raw.split(',').forEach(pair => {
       const [k, v] = pair.split(':');
       if (!k) return;
-      state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+      if (k === 'acceptSel') state.picks[k] = v === '' ? [] : v.split('|').map(Number);
+      else state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
     });
   }
   // replay working-out, e.g.
