@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branching Argument Builder — Quadratic Motion + Solver</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex; justify-content: center; align-items: flex-start; gap: 24px;
+    padding: 24px 20px 60px; min-height: 100vh;
+  }
+
+  .rail { width: 300px; display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #8a8a94; font-weight: 600; margin-bottom: 10px;
+  }
+  .card p { font-size: 13px; line-height: 1.5; color: #444; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .dataset-btn {
+    display: block; width: 100%; text-align: left;
+    padding: 9px 12px; margin-bottom: 6px;
+    border: 1.5px solid #e2e2e8; border-radius: 9px; background: #fff;
+    font-size: 13px; font-weight: 500; color: #333; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .dataset-btn:hover { border-color: #c9c9d2; background: #fafafb; }
+  .dataset-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  .dataset-btn .sub { display: block; font-size: 11px; font-weight: 400; opacity: 0.65; margin-top: 2px; }
+  .dataset-btn:last-child { margin-bottom: 0; }
+
+  .tree { font-size: 12.5px; line-height: 1.7; color: #444; }
+  .tree code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px; background: #f2f2f5; padding: 1px 4px; border-radius: 4px;
+  }
+  .tree .branch { padding-left: 14px; border-left: 2px solid #e6e6ec; margin: 4px 0 4px 4px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #fff; }
+  .tag.two { background: #0f8a6a; }
+  .tag.one { background: #b8860b; }
+  .tag.none { background: #b5379a; }
+
+  /* ---------- phone ---------- */
+  .phone {
+    width: 375px; min-height: 812px;
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex; flex-direction: column; position: relative; flex: none;
+  }
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #c5cc3c; border-radius: 3px; transition: width 0.35s ease; }
+  .bolt { font-size: 16px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .context-block { background: #f5f5f7; border-radius: 12px; padding: 14px; }
+  .context-text { font-size: 14px; line-height: 1.5; color: #1a1a1a; }
+  .model-line {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #e4e4ea;
+    font-size: 12.5px; color: #6a6a74; display: flex; align-items: center; gap: 6px;
+  }
+
+  .stage {
+    border: 1px solid #e4e4ea; border-radius: 12px; padding: 12px 14px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stage-head {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600;
+  }
+  .stage-head .n {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; background: #e9e9ef;
+    color: #6a6a74; font-size: 10px; margin-right: 6px; vertical-align: 1px;
+  }
+  .line { font-size: 14px; line-height: 2.1; color: #1a1a1a; }
+  .derived { font-size: 14px; color: #1a1a1a; text-align: center; padding: 2px 0; }
+  .eq { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font-size: 15px; }
+
+  .reveal { animation: fadeIn 0.33s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .frag { display: inline; }
+  .frag.reveal .slot, .stage.reveal .slot { animation: slotUp 0.33s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes slotUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 46px; min-height: 30px; padding: 2px 9px; margin: 0 2px;
+    border: 1.5px solid #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s; text-align: center;
+  }
+  .slot.empty { background: #fafafa; }
+  .slot.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.08); background: #fff; }
+  .slot.filled { border-color: #b9b9c4; background: #f2f2f5; }
+  .slot.right { border-color: #2ecc40; background: #eafbea; }
+  .slot.wrong { border-color: #e74c3c; background: #fdeeec; }
+  .slot .katex { font-size: 0.95em; }
+
+  /* ---------- transformer workspace ---------- */
+  .workspace {
+    background: #fafafb; border: 1px solid #ededf2; border-radius: 10px;
+    padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .eqrow { font-size: 15px; color: #8a8a94; padding: 1px 0; }
+  .eqrow.current { color: #1a1a1a; }
+  .via {
+    font-size: 10px; color: #9a9aa4; background: #f0f0f4; border-radius: 10px;
+    padding: 1px 8px; margin: 3px 0; font-variant-numeric: tabular-nums;
+  }
+  .cases { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+  .case {
+    flex: 1; border: 1.5px solid #e4e4ea; border-radius: 9px; padding: 6px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer; background: #fff; transition: all 0.15s;
+  }
+  .case.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.06); }
+  .case .eqrow { font-size: 14px; }
+  .case-done { font-size: 10px; color: #17853a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .case-hint { font-size: 10.5px; color: #a0a0aa; margin-top: 4px; }
+
+  .actions-bank, .operand-bar {
+    display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px;
+  }
+  .operand-bar { align-items: center; }
+  .operand-label { font-size: 12px; color: #6a6a74; margin-right: 2px; }
+  .pill {
+    border: 1.5px solid #d4d7e0; background: #fff; border-radius: 14px;
+    padding: 5px 10px; font-size: 12px; color: #333; cursor: pointer;
+    font-family: inherit; transition: all 0.12s;
+  }
+  .pill:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .pill:active { transform: scale(0.95); background: #ededf2; }
+  .pill.undo { border-color: #ededf2; color: #9a9aa4; }
+  .pill.operand { min-width: 38px; font-variant-numeric: tabular-nums; }
+  .pill.cancel { border-color: #ededf2; color: #9a9aa4; padding: 5px 9px; }
+  .tf-message { font-size: 11.5px; color: #c0392b; text-align: center; margin-top: 6px; line-height: 1.4; }
+  .final-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-top: 10px; text-align: center;
+  }
+
+  .plot { margin-top: 2px; }
+  .plot svg { width: 100%; display: block; }
+
+  .bank-area { background: #f7f8fa; border-top: 1px solid #e8e8e8; padding: 10px 12px 12px; min-height: 92px; }
+  .bank-caption {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-bottom: 8px; text-align: center;
+  }
+  .bank { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+  .tile {
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    padding: 8px 12px; font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.12s; font-family: inherit;
+  }
+  .tile:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .tile:active { transform: scale(0.96); background: #ededf2; }
+
+  .feedback { font-size: 13px; line-height: 1.45; padding: 4px 16px 0; min-height: 18px; color: #666; text-align: center; }
+  .feedback.good { color: #17853a; }
+  .feedback.bad { color: #c0392b; }
+
+  .bottom-bar { padding: 10px 16px 20px; display: flex; gap: 10px; align-items: center; }
+  .check-btn {
+    flex: 1; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: default; transition: all 0.3s; font-family: inherit;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; cursor: pointer; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+  .check-btn.incorrect { background: #e74c3c; color: #fff; }
+  .reset-btn {
+    height: 46px; padding: 0 16px; border-radius: 23px;
+    border: 1.5px solid #e0e0e6; background: #fff; color: #666;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #f7f7f9; }
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <div class="card">
+    <h2>Scenario</h2>
+    <div id="dataset-buttons"></div>
+    <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
+      One question shell. The learner's own count of the solutions decides how many roots they are
+      asked for, and which interpretation sentence closes the argument.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>The four moves</h2>
+    <p><strong>1 Model</strong> — substitute into <em>h</em> = &minus;5<em>t</em>&sup2; +
+      <em>v</em><sub>0</sub><em>t</em> + <em>h</em><sub>0</sub> and say what height the question is
+      asking about.</p>
+    <p><strong>2 Count</strong> — the discriminant, then how many real solutions it implies.</p>
+    <p><strong>3 Solve</strong> — a QuadraticEquationTransformer-style workspace to do the algebra in,
+      then as many final-answer blanks as they just claimed there are.</p>
+    <p><strong>4 Interpret</strong> — throw away what the situation forbids, and answer in words.</p>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="context-block">
+      <div class="context-text" id="context-text"></div>
+      <div class="model-line">Model: <span id="model-eq"></span></div>
+    </div>
+    <div id="stages"></div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="bank-area">
+    <div class="bank-caption" id="bank-caption">Tap to fill the blank</div>
+    <div class="bank" id="bank"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" id="reset">Reset</button>
+    <button class="check-btn" id="check">Check</button>
+  </div>
+</div>
+
+<div class="rail">
+  <div class="card">
+    <h2>Branch map</h2>
+    <div class="tree">
+      <strong>2.</strong> <code>b² − 4ac = ?</code>, so the equation has <code>?</code> real solutions
+      <div class="branch">
+        <span class="tag two">two</span> → solve for <code>t = ?</code> or <code>t = ?</code><br>
+        <strong>4.</strong> Time cannot be negative, so we reject <code>?</code> and conclude <code>?</code>
+      </div>
+      <div class="branch">
+        <span class="tag one">one</span> → solve for <code>t = ?</code><br>
+        <strong>4.</strong> A repeated solution means <code>?</code>
+      </div>
+      <div class="branch">
+        <span class="tag none">none</span> → no solving step at all<br>
+        <strong>4.</strong> With no real solutions, <code>?</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Notes</h2>
+    <p>The <strong>count blank rewrites the rest of the question</strong> — claim one solution and only
+      one root blank ever appears. Wrong counts still produce a complete, coherent argument that fails
+      on Check, rather than a dead end.</p>
+    <p>The <strong>rejection step only exists on the two-solution branch</strong>, which is where it is
+      the actual mathematical work. Nothing is asked twice.</p>
+    <p>The <strong>graph appears only at stage 4</strong>. Shown earlier it would give away the count;
+      shown at the end it ties the rejected root to the shaded "before the throw" region.</p>
+    <p>Equation blanks are all visible at once — an expression reads better whole — while sentence
+      blanks still arrive one at a time.</p>
+  </div>
+
+  <div class="card">
+    <h2>The solve workspace</h2>
+    <p>Stage 3 is a small <strong>QuadraticEquationTransformer</strong>: action pills, a step row per
+      transformation, split cases into two tracks, and Undo. The intended route here is
+      <em>÷ &minus;5 → Factor → Split cases → +/&minus; on each case</em>.</p>
+    <p>It runs real algebra, not a script — any legal move is allowed, and illegal ones are refused
+      with a reason ("Factor once the t² coefficient is 1", "That would leave fractions").</p>
+    <p><strong>The workspace is scaffolding; the final-answer blanks are the commitment.</strong>
+      Nothing is auto-filled from the working-out, so the argument above and below stays intact —
+      and a learner who claims two solutions for an equation that has none watches Factor refuse,
+      which is the lesson.</p>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- scenarios
+const SCENARIOS = {
+  lands: {
+    name: 'Two solutions',
+    sub: 'one negative — when does it land?',
+    context: 'A ball is thrown straight up at 15 m/s from the top of a 20 m building. When does it hit the ground?',
+    coeffs: { a: -5, b: 15, c: 20 },
+    numberBank: [-20, -5, 0, 5, 15, 20],
+    target: 0,
+    targetSentence: 'It hits the ground when',
+    standard: '-5t^2 + 15t + 20 = 0',
+    std: { a: -5, b: 15, c: 20 },
+    operandBank: [-5, -1, 1, 4, 5, 15, 20],
+    disc: 625,
+    discBank: [-175, 25, 225, 625],
+    count: 'two',
+    roots: [-1, 4],
+    rootBank: [-4, -1, 1, 4, 5],
+    conclusions: [
+      { id: 'lands4',  text: 'the ball lands after 4 seconds' },
+      { id: 'lands1',  text: 'the ball lands after 1 second' },
+      { id: 'never',   text: 'the ball never lands' },
+      { id: 'twice',   text: 'the ball reaches the ground twice' }
+    ],
+    conclusion: 'lands4',
+    plot: { tMin: -2, tMax: 5, hMin: -12, hMax: 34 }
+  },
+
+  grazes: {
+    name: 'One solution',
+    sub: 'repeated root — reaches 20 m once',
+    context: 'A ball is thrown straight up at 20 m/s from the ground. When is it 20 m above the ground?',
+    coeffs: { a: -5, b: 20, c: 0 },
+    numberBank: [-20, -5, 0, 5, 10, 20],
+    target: 20,
+    targetSentence: 'It is 20 m above the ground when',
+    standard: '-5t^2 + 20t - 20 = 0',
+    std: { a: -5, b: 20, c: -20 },
+    operandBank: [-5, -1, 2, 4, 5, 20],
+    disc: 0,
+    discBank: [-400, 0, 400, 800],
+    count: 'one',
+    roots: [2],
+    rootBank: [-2, 1, 2, 4],
+    conclusions: [
+      { id: 'just20',  text: 'the ball only just reaches 20 m, after 2 seconds' },
+      { id: 'past20',  text: 'the ball passes 20 m twice' },
+      { id: 'never20', text: 'the ball never reaches 20 m' },
+      { id: 'at4',     text: 'the ball reaches 20 m after 4 seconds' }
+    ],
+    conclusion: 'just20',
+    plot: { tMin: -0.6, tMax: 4.6, hMin: -6, hMax: 34 }
+  },
+
+  misses: {
+    name: 'No real solutions',
+    sub: 'never gets to 30 m',
+    context: 'A ball is thrown straight up at 20 m/s from the ground. When is it 30 m above the ground?',
+    coeffs: { a: -5, b: 20, c: 0 },
+    numberBank: [-30, -5, 0, 5, 20, 30],
+    target: 30,
+    targetSentence: 'It is 30 m above the ground when',
+    standard: '-5t^2 + 20t - 30 = 0',
+    std: { a: -5, b: 20, c: -30 },
+    operandBank: [-5, -1, 2, 5, 6, 20, 30],
+    disc: -200,
+    discBank: [-200, 200, 400, 1000],
+    count: 'none',
+    roots: [],
+    rootBank: [-2, 1, 2, 3],
+    conclusions: [
+      { id: 'never30', text: 'the ball never reaches 30 m' },
+      { id: 'at2',     text: 'the ball reaches 30 m after 2 seconds' },
+      { id: 'twice30', text: 'the ball passes 30 m twice' },
+      { id: 'just30',  text: 'the ball only just reaches 30 m' }
+    ],
+    conclusion: 'never30',
+    plot: { tMin: -0.6, tMax: 4.6, hMin: -6, hMax: 38 }
+  }
+};
+
+const COUNTS = [
+  { id: 'two',  text: 'two real solutions' },
+  { id: 'one',  text: 'one real solution' },
+  { id: 'none', text: 'no real solutions' }
+];
+
+const state = { key: 'lands', picks: {}, checked: false, tf: null };
+let seen = new Set();
+
+// ================================================================ solver
+// A small transformer in the spirit of QuadraticEquationTransformer: the
+// learner applies real algebra actions and each one appends a step row.
+// Equations are  a t^2 + b t + c = rhs  or  m t + k = rhs.
+
+const ACTIONS = [
+  { id: 'add',      label: 'Add',         operand: true  },
+  { id: 'subtract', label: 'Subtract',    operand: true  },
+  { id: 'multiply', label: 'Multiply by', operand: true  },
+  { id: 'divide',   label: 'Divide by',   operand: true  },
+  { id: 'factor',   label: 'Factor',      operand: false },
+  { id: 'split',    label: 'Split cases', operand: false },
+  { id: 'sqrt',     label: 'Square root', operand: false }
+];
+
+function newTF() {
+  const st = S().std;
+  return {
+    pre: [{ eq: { t: 'quad', a: st.a, b: st.b, c: st.c, rhs: 0 }, via: null }],
+    split: null,
+    side: 'left',
+    pending: null,
+    message: ''
+  };
+}
+function tf() {
+  if (!state.tf) state.tf = newTF();
+  return state.tf;
+}
+function lastEq() {
+  const T = tf();
+  if (!T.split) return T.pre[T.pre.length - 1].eq;
+  const arr = T.split[T.side];
+  return arr[arr.length - 1].eq;
+}
+function pushEq(eq, via) {
+  const T = tf();
+  if (!T.split) T.pre.push({ eq: eq, via: via });
+  else T.split[T.side].push({ eq: eq, via: via });
+}
+function isSolved(eq) { return eq.t === 'lin' && eq.m === 1 && eq.k === 0; }
+
+function perfectSqrt(n) {
+  if (n < 0) return null;
+  const r = Math.round(Math.sqrt(n));
+  return r * r === n ? r : null;
+}
+
+// returns an error string, or '' when the action was applied
+function applyAction(id, n) {
+  const eq = lastEq();
+  const T = tf();
+
+  if (id === 'add' || id === 'subtract') {
+    const d = id === 'add' ? n : -n;
+    const via = (id === 'add' ? '+ ' : '− ') + num(n);
+    if (eq.t === 'quad') pushEq({ t: 'quad', a: eq.a, b: eq.b, c: eq.c + d, rhs: eq.rhs + d }, via);
+    else if (eq.t === 'lin') pushEq({ t: 'lin', m: eq.m, k: eq.k + d, rhs: eq.rhs + d }, via);
+    else return 'Add and subtract work on an expanded equation.';
+    return '';
+  }
+
+  if (id === 'multiply' || id === 'divide') {
+    if (eq.t !== 'quad' && eq.t !== 'lin') return 'Multiply and divide work on an expanded equation.';
+    const f = id === 'multiply' ? n : 1 / n;
+    if (n === 0) return 'Dividing by zero is not allowed.';
+    const vals = eq.t === 'quad' ? [eq.a * f, eq.b * f, eq.c * f, eq.rhs * f]
+                                 : [eq.m * f, eq.k * f, eq.rhs * f];
+    if (vals.some(v => !Number.isInteger(v))) return 'That would leave fractions — try a factor of every term.';
+    if (eq.t === 'quad') pushEq({ t: 'quad', a: vals[0], b: vals[1], c: vals[2], rhs: vals[3] },
+      (id === 'multiply' ? '× ' : '÷ ') + num(n));
+    else pushEq({ t: 'lin', m: vals[0], k: vals[1], rhs: vals[2] },
+      (id === 'multiply' ? '× ' : '÷ ') + num(n));
+    return '';
+  }
+
+  if (id === 'factor') {
+    if (eq.t !== 'quad') return 'There is no quadratic left to factor.';
+    if (eq.rhs !== 0) return 'Factoring helps once the other side is 0.';
+    if (eq.a !== 1) return 'Factor once the ' + 't²' + ' coefficient is 1.';
+    const D = eq.b * eq.b - 4 * eq.c;
+    const rt = perfectSqrt(D);
+    if (rt === null) return D < 0
+      ? 'No real factors — the discriminant is negative.'
+      : 'This one does not factor over the integers.';
+    pushEq({ t: 'fact', r1: (-eq.b - rt) / 2, r2: (-eq.b + rt) / 2, rhs: 0 }, 'factor');
+    return '';
+  }
+
+  if (id === 'split') {
+    if (eq.t !== 'fact') return 'Split cases once the equation is a product equal to 0.';
+    if (T.split) return 'Already split into cases.';
+    T.split = {
+      left:  [{ eq: { t: 'lin', m: 1, k: -eq.r1, rhs: 0 }, via: 'case 1' }],
+      right: [{ eq: { t: 'lin', m: 1, k: -eq.r2, rhs: 0 }, via: 'case 2' }]
+    };
+    T.side = 'left';
+    return '';
+  }
+
+  if (id === 'sqrt') {
+    if (eq.t !== 'quad' || eq.b !== 0) return 'Take a square root once the equation looks like t² = k.';
+    if (eq.c !== 0) return 'Move the constant across first.';
+    const q = eq.rhs / eq.a;
+    if (!Number.isInteger(q)) return 'That would leave fractions.';
+    if (q < 0) return 'No real square root — the right side is negative.';
+    const rt = perfectSqrt(q);
+    if (rt === null) return 'That root is not a whole number.';
+    T.split = {
+      left:  [{ eq: { t: 'lin', m: 1, k: 0, rhs: rt },  via: '+√' }],
+      right: [{ eq: { t: 'lin', m: 1, k: 0, rhs: -rt }, via: '−√' }]
+    };
+    T.side = 'left';
+    return '';
+  }
+  return 'Nothing to do here.';
+}
+
+function undoStep() {
+  const T = tf();
+  if (T.split) {
+    const arr = T.split[T.side];
+    if (arr.length > 1) { arr.pop(); return; }
+    const other = T.split[T.side === 'left' ? 'right' : 'left'];
+    if (other.length > 1) { other.pop(); return; }
+    T.split = null;               // undo the split itself
+    return;
+  }
+  if (T.pre.length > 1) T.pre.pop();
+}
+
+// ---- equation to LaTeX
+function polyTex(terms, rhs) {
+  let out = '';
+  terms.forEach(([v, sfx]) => {
+    if (v === 0) return;
+    const mag = Math.abs(v);
+    const magStr = (sfx && mag === 1) ? '' : String(mag);
+    if (out === '') out = (v < 0 ? '-' : '') + magStr + sfx;
+    else out += (v < 0 ? ' - ' : ' + ') + magStr + sfx;
+  });
+  if (out === '') out = '0';
+  return out + ' = ' + rhs;
+}
+function eqTex(eq) {
+  if (eq.t === 'quad') return polyTex([[eq.a, 't^2'], [eq.b, 't'], [eq.c, '']], eq.rhs);
+  if (eq.t === 'lin')  return polyTex([[eq.m, 't'], [eq.k, '']], eq.rhs);
+  const f = r => '(t ' + (r < 0 ? '+ ' + Math.abs(r) : '- ' + r) + ')';
+  return f(eq.r1) + f(eq.r2) + ' = ' + eq.rhs;
+}
+
+function S() { return SCENARIOS[state.key]; }
+function K(tex, opts) { return katex.renderToString(tex, Object.assign({ throwOnError: false }, opts || {})); }
+function num(n) { return n < 0 ? '−' + Math.abs(n) : String(n); }
+
+// ---------------------------------------------------------------- blank order
+function blankOrder() {
+  const o = ['a', 'b', 'c', 'target', 'disc', 'count'];
+  const n = state.picks.count;
+  if (n === 'two')  o.push('r1', 'r2', 'reject', 'concl');
+  if (n === 'one')  o.push('r1', 'concl');
+  if (n === 'none') o.push('concl');
+  return o;
+}
+function activeBlank() {
+  return blankOrder().find(b => state.picks[b] === undefined || state.picks[b] === null) || null;
+}
+function filled(b) { return state.picks[b] !== undefined && state.picks[b] !== null; }
+function stage1Done() { return ['a','b','c','target'].every(filled); }
+function stage2Done() { return stage1Done() && filled('disc') && filled('count'); }
+function stage3Needed() { return state.picks.count === 'two' || state.picks.count === 'one'; }
+function stage3Done() {
+  if (!stage2Done()) return false;
+  if (state.picks.count === 'two') return filled('r1') && filled('r2');
+  if (state.picks.count === 'one') return filled('r1');
+  return true;
+}
+function allDone() { return blankOrder().every(filled); }
+
+// ---------------------------------------------------------------- options
+function optionsFor(b) {
+  const s = S();
+  if (['a','b','c','target'].includes(b))
+    return s.numberBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'disc')  return s.discBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'count') return COUNTS;
+  if (b === 'r1' || b === 'r2')
+    return s.rootBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'reject')
+    return [state.picks.r1, state.picks.r2]
+      .filter(v => v !== undefined && v !== null)
+      .map(v => ({ id: v, text: 't = ' + num(v) }));
+  if (b === 'concl') return s.conclusions;
+  return [];
+}
+function textFor(b, id) {
+  const o = optionsFor(b).find(o => String(o.id) === String(id));
+  return o ? o.text : '';
+}
+
+// ---------------------------------------------------------------- grading
+function isRight(b) {
+  const s = S(), p = state.picks;
+  if (b === 'a') return p.a === s.coeffs.a;
+  if (b === 'b') return p.b === s.coeffs.b;
+  if (b === 'c') return p.c === s.coeffs.c;
+  if (b === 'target') return p.target === s.target;
+  if (b === 'disc')   return p.disc === s.disc;
+  if (b === 'count')  return p.count === s.count;
+  if (b === 'r1' || b === 'r2') {
+    if (s.count !== p.count) return false;
+    const picks = (p.count === 'two' ? [p.r1, p.r2] : [p.r1]).slice().sort((x, y) => x - y);
+    const want = s.roots.slice().sort((x, y) => x - y);
+    return picks.length === want.length && picks.every((v, i) => v === want[i]);
+  }
+  if (b === 'reject') return typeof p.reject === 'number' && p.reject < 0;
+  if (b === 'concl')  return p.concl === s.conclusion;
+  return false;
+}
+
+// ---------------------------------------------------------------- rendering
+function slotHTML(b, wide) {
+  const p = state.picks[b];
+  let cls = 'slot ' + (filled(b) ? 'filled' : 'empty');
+  if (!filled(b) && activeBlank() === b) cls += ' active';
+  if (state.checked && filled(b)) cls += isRight(b) ? ' right' : ' wrong';
+  const label = filled(b) ? textFor(b, p) : '&nbsp;';
+  return '<span class="' + cls + '" data-blank="' + b + '"' +
+         (wide ? ' style="min-width:' + wide + 'px"' : '') + '>' + label + '</span>';
+}
+function frag(key, html) {
+  const isNew = !seen.has(key);
+  seen.add(key);
+  return '<span class="frag' + (isNew ? ' reveal' : '') + '">' + html + '</span>';
+}
+function stageCard(key, n, title, inner) {
+  const isNew = !seen.has('stage-' + key);
+  seen.add('stage-' + key);
+  return '<div class="stage' + (isNew ? ' reveal' : '') + '" style="margin-bottom:10px">' +
+    '<div class="stage-head"><span class="n">' + n + '</span>' + title + '</div>' + inner + '</div>';
+}
+
+function renderDatasetButtons() {
+  const host = document.getElementById('dataset-buttons');
+  host.innerHTML = '';
+  Object.entries(SCENARIOS).forEach(([key, s]) => {
+    const b = document.createElement('button');
+    b.className = 'dataset-btn' + (key === state.key ? ' active' : '');
+    b.innerHTML = s.name + '<span class="sub">' + s.sub + '</span>';
+    b.onclick = () => { state.key = key; resetPicks(); renderAll(); };
+    host.appendChild(b);
+  });
+}
+
+function renderStages() {
+  const s = S(), p = state.picks;
+  let html = '';
+
+  // ---- stage 1: model
+  let s1 = '<div class="eq">' +
+    K('h =') + slotHTML('a') + K('t^2 +') + slotHTML('b') + K('t +') + slotHTML('c') +
+    '</div>';
+  if (stage1Done() || ['a','b','c'].every(filled)) {
+    s1 += frag('target-line',
+      '<div class="line" style="text-align:center">' + s.targetSentence + ' ' +
+      K('h =') + ' ' + slotHTML('target') + '</div>');
+  }
+  if (stage1Done()) {
+    s1 += frag('standard',
+      '<div class="derived">So we solve &nbsp;' + K(s.standard) + '</div>');
+  }
+  html += stageCard('model', 1, 'Model the situation', s1);
+
+  // ---- stage 2: count
+  if (stage1Done()) {
+    let s2 = '<div class="line" style="text-align:center">' +
+      K('b^2 - 4ac =') + ' ' + slotHTML('disc') + '</div>';
+    if (filled('disc')) {
+      s2 += frag('count-line',
+        '<div class="line" style="text-align:center">so the equation has ' + slotHTML('count', 120) + '</div>');
+    }
+    html += stageCard('count', 2, 'How many solutions?', s2);
+  }
+
+  // ---- stage 3: solve, with a transformer workspace as the working-out
+  if (stage2Done() && stage3Needed()) {
+    let s3 = workspaceHTML();
+    s3 += '<div class="final-label">Final answer</div>';
+    if (p.count === 'two') {
+      s3 += '<div class="eq">' + K('t =') + slotHTML('r1') + K('\\quad\\text{or}\\quad') +
+            K('t =') + slotHTML('r2') + '</div>';
+    } else {
+      s3 += '<div class="eq">' + K('t =') + slotHTML('r1') + '</div>';
+    }
+    html += stageCard('solve-' + p.count, 3, 'Solve', s3);
+  }
+
+  // ---- stage 4: interpret
+  if (stage3Done()) {
+    const n = stage3Needed() ? 4 : 3;
+    let s4 = '';
+    if (p.count === 'two') {
+      s4 += frag('int-two-a',
+        '<div class="line">Time cannot be negative, so we reject ' + slotHTML('reject', 70) + '</div>');
+      if (filled('reject')) {
+        s4 += frag('int-two-b',
+          '<div class="line">and conclude that ' + slotHTML('concl', 150) + '</div>');
+      }
+    } else if (p.count === 'one') {
+      s4 += frag('int-one', '<div class="line">A repeated solution means ' + slotHTML('concl', 150) + '</div>');
+    } else {
+      s4 += frag('int-none', '<div class="line">With no real solutions, ' + slotHTML('concl', 150) + '</div>');
+    }
+    if (filled('concl')) s4 += frag('plot', '<div class="plot">' + plotSVG() + '</div>');
+    html += stageCard('interpret-' + p.count, n, 'Interpret', s4);
+  }
+
+  document.getElementById('stages').innerHTML = html;
+  document.querySelectorAll('.slot').forEach(el => {
+    el.onclick = () => onSlotClick(el.dataset.blank);
+  });
+  wireWorkspace();
+}
+
+// ---- the transformer workspace: step rows, action pills, undo
+function rowHTML(r, isLast) {
+  return (r.via ? '<div class="via">' + r.via + '</div>' : '') +
+    '<div class="eqrow' + (isLast ? ' current' : '') + '">' + K(eqTex(r.eq)) + '</div>';
+}
+
+function workspaceHTML() {
+  const T = tf();
+  let h = '<div class="workspace">';
+
+  T.pre.forEach((r, i) => { h += rowHTML(r, !T.split && i === T.pre.length - 1); });
+
+  if (T.split) {
+    h += '<div class="cases">';
+    ['left', 'right'].forEach(side => {
+      const rows = T.split[side];
+      h += '<div class="case' + (T.side === side ? ' active' : '') + '" data-side="' + side + '">';
+      rows.forEach((r, i) => { h += rowHTML(r, i === rows.length - 1); });
+      if (isSolved(rows[rows.length - 1].eq)) h += '<div class="case-done">solved</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+    h += '<div class="case-hint">Tap a case to work on it</div>';
+  }
+  h += '</div>';
+
+  // actions bank, or the operand pad once an action needs a number
+  if (T.pending) {
+    const act = ACTIONS.find(a => a.id === T.pending);
+    h += '<div class="operand-bar"><span class="operand-label">' + act.label + '</span>' +
+      S().operandBank.map(n =>
+        '<button class="pill operand" data-operand="' + n + '">' + num(n) + '</button>').join('') +
+      '<button class="pill cancel" data-cancel="1">&times;</button></div>';
+  } else {
+    h += '<div class="actions-bank">' +
+      ACTIONS.map(a => '<button class="pill" data-action="' + a.id + '">' + a.label + '</button>').join('') +
+      '<button class="pill undo" data-undo="1">&#8630; Undo</button></div>';
+  }
+  if (T.message) h += '<div class="tf-message">' + T.message + '</div>';
+  return h;
+}
+
+function wireWorkspace() {
+  const T = tf();
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.onclick = () => {
+      const a = ACTIONS.find(x => x.id === el.dataset.action);
+      T.message = '';
+      if (a.operand) { T.pending = a.id; }
+      else { T.message = applyAction(a.id, null); }
+      renderAll();
+    };
+  });
+  document.querySelectorAll('[data-operand]').forEach(el => {
+    el.onclick = () => {
+      T.message = applyAction(T.pending, Number(el.dataset.operand));
+      T.pending = null;
+      renderAll();
+    };
+  });
+  const cancel = document.querySelector('[data-cancel]');
+  if (cancel) cancel.onclick = () => { T.pending = null; renderAll(); };
+  const undo = document.querySelector('[data-undo]');
+  if (undo) undo.onclick = () => { undoStep(); T.message = ''; renderAll(); };
+  document.querySelectorAll('[data-side]').forEach(el => {
+    el.onclick = () => { T.side = el.dataset.side; T.message = ''; renderAll(); };
+  });
+}
+
+// parabola of the real situation, with the target height and the roots the learner claimed
+function plotSVG() {
+  const s = S(), pl = s.plot;
+  const W = 320, H = 190, ml = 30, mr = 12, mt = 10, mb = 30;
+  const X = t => ml + (t - pl.tMin) / (pl.tMax - pl.tMin) * (W - ml - mr);
+  const Y = h => mt + (pl.hMax - h) / (pl.hMax - pl.hMin) * (H - mt - mb);
+  const f = t => s.coeffs.a * t * t + s.coeffs.b * t + s.coeffs.c;
+
+  let d = '';
+  for (let i = 0; i <= 120; i++) {
+    const t = pl.tMin + (pl.tMax - pl.tMin) * i / 120;
+    d += (i ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(f(t)).toFixed(1) + ' ';
+  }
+
+  const roots = (state.picks.count === 'two' ? [state.picks.r1, state.picks.r2]
+              : state.picks.count === 'one' ? [state.picks.r1] : [])
+              .filter(v => typeof v === 'number');
+
+  const marks = roots.map(t => {
+    const keep = t >= 0;
+    return '<circle cx="' + X(t).toFixed(1) + '" cy="' + Y(s.target).toFixed(1) + '" r="5" ' +
+      'fill="' + (keep ? '#2ecc40' : '#fff') + '" stroke="' + (keep ? '#1e9e31' : '#e74c3c') +
+      '" stroke-width="2"/>' +
+      // white halo so the curve never cuts through the label
+      '<text x="' + X(t).toFixed(1) + '" y="' + (Y(s.target) - 11).toFixed(1) + '" text-anchor="middle" ' +
+      'font-size="10" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" ' +
+      'fill="' + (keep ? '#1e9e31' : '#e74c3c') + '">t = ' + num(t) + '</text>';
+  }).join('');
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '">' +
+    '<defs><clipPath id="plotclip"><rect x="' + ml + '" y="' + mt + '" width="' + (W - ml - mr) +
+      '" height="' + (H - mt - mb) + '"/></clipPath></defs>' +
+    // region before the throw
+    (pl.tMin < 0 ? '<rect x="' + X(pl.tMin) + '" y="' + mt + '" width="' + (X(0) - X(pl.tMin)) +
+      '" height="' + (H - mt - mb) + '" fill="#f3f3f6"/>' +
+      // only label the band when there is room for the word
+      (X(0) - X(pl.tMin) > 34
+        ? '<text x="' + ((X(pl.tMin) + X(0)) / 2).toFixed(1) + '" y="' + (H - mb - 6) +
+          '" text-anchor="middle" font-size="9" fill="#a0a0aa">before the throw</text>'
+        : '') : '') +
+    // axes
+    '<line x1="' + ml + '" y1="' + Y(0) + '" x2="' + (W - mr) + '" y2="' + Y(0) +
+      '" stroke="#c9c9d2" stroke-width="1"/>' +
+    '<line x1="' + X(0) + '" y1="' + mt + '" x2="' + X(0) + '" y2="' + (H - mb) +
+      '" stroke="#c9c9d2" stroke-width="1"/>' +
+    // target height
+    '<line x1="' + ml + '" y1="' + Y(s.target) + '" x2="' + (W - mr) + '" y2="' + Y(s.target) +
+      '" stroke="#2f7de1" stroke-width="1.5" stroke-dasharray="5 4"/>' +
+    // label the target height in the left margin, clear of the root labels
+    '<text x="' + (ml - 2) + '" y="' + (Y(s.target) + 3) + '" text-anchor="end" font-size="9" fill="#2f7de1">h=' +
+      s.target + '</text>' +
+    // curve
+    '<path d="' + d + '" fill="none" stroke="#1a1a1a" stroke-width="2" clip-path="url(#plotclip)"/>' +
+    marks +
+    '<text x="' + (W - mr) + '" y="' + (H - 8) + '" text-anchor="end" font-size="10" fill="#8a8a94">t (s)</text>' +
+    '<text x="4" y="' + (mt + 8) + '" font-size="10" fill="#8a8a94">h (m)</text>' +
+    '</svg>';
+}
+
+function renderBank() {
+  const b = activeBlank();
+  const bank = document.getElementById('bank');
+  const caption = document.getElementById('bank-caption');
+  bank.innerHTML = '';
+  if (!b) { caption.textContent = 'Tap any boxed answer to change it'; return; }
+  caption.textContent =
+    ['a','b','c','target'].includes(b) ? 'Build the equation' :
+    b === 'disc'   ? 'Evaluate the discriminant' :
+    b === 'count'  ? 'How many real solutions?' :
+    b === 'reject' ? 'Which time is impossible?' :
+    b === 'concl'  ? 'Say what it means' : 'Solve for t';
+  optionsFor(b).forEach(o => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.textContent = o.text;
+    t.onclick = () => { state.picks[b] = o.id; state.checked = false; renderAll(); };
+    bank.appendChild(t);
+  });
+}
+
+function renderFooter() {
+  const btn = document.getElementById('check');
+  const fb = document.getElementById('feedback');
+  const order = blankOrder();
+  const done = allDone();
+
+  document.getElementById('progress').style.width =
+    Math.round(order.filter(filled).length / order.length * 100) + '%';
+
+  btn.className = 'check-btn' + (done ? ' ready' : '');
+  btn.textContent = 'Check';
+  fb.textContent = ''; fb.className = 'feedback';
+
+  if (state.checked) {
+    const ok = order.every(isRight);
+    btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
+    btn.textContent = ok ? 'Correct' : 'Try again';
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    fb.textContent = ok
+      ? 'Modelled, counted, solved and interpreted — the whole argument holds.'
+      : 'Something in the chain does not hold. Tap a red box to rethink it.';
+  }
+}
+
+function renderContext() {
+  document.getElementById('context-text').textContent = S().context;
+  document.getElementById('model-eq').innerHTML = K('h = -5t^2 + v_0 t + h_0');
+}
+
+function renderAll() {
+  renderDatasetButtons();
+  renderContext();
+  renderStages();
+  renderBank();
+  renderFooter();
+}
+
+// ---------------------------------------------------------------- interaction
+function onSlotClick(b) {
+  const order = blankOrder();
+  const i = order.indexOf(b);
+  if (i === -1) return;
+  order.slice(i).forEach(k => { delete state.picks[k]; });
+  // anything downstream should animate in again
+  const keep = new Set(['stage-model']);
+  if (i > 3) keep.add('target-line').add('standard');
+  if (i > 4) keep.add('stage-count');
+  seen = keep;
+  // reopening the model or the count invalidates the working-out
+  if (i <= order.indexOf('count')) state.tf = null;
+  state.checked = false;
+  renderAll();
+}
+
+function resetPicks() { state.picks = {}; state.checked = false; state.tf = null; seen = new Set(); }
+
+(function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('s') && SCENARIOS[q.get('s')]) state.key = q.get('s');
+  const raw = q.get('picks');
+  if (raw) {
+    raw.split(',').forEach(pair => {
+      const [k, v] = pair.split(':');
+      if (!k) return;
+      state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+    });
+  }
+  // replay working-out, e.g. steps=divide:-5,factor,split,subtract:1,side:right,add:4
+  const steps = q.get('steps');
+  if (steps) {
+    steps.split(',').forEach(st => {
+      const [id, arg] = st.split(':');
+      if (id === 'side') { tf().side = arg; return; }
+      const msg = applyAction(id, arg === undefined ? null : Number(arg));
+      if (msg) tf().message = msg;
+    });
+  }
+  if (q.get('checked') === '1') state.checked = true;
+  seen = new Set();
+})();
+
+document.getElementById('check').onclick = () => { if (allDone()) { state.checked = true; renderAll(); } };
+document.getElementById('reset').onclick = () => { resetPicks(); renderAll(); };
+
+renderAll();
+</script>
+
+</body>
+</html>
