@@ -771,10 +771,19 @@ function plotSVG() {
   const W = 320, H = 200, ml = 34, mr = 12, mt = 16, mb = 30;
   const X = x => ml + x / pl.xMax * (W - ml - mr);
   const Y = y => mt + (pl.yMax - y) / pl.yMax * (H - mt - mb);
-  const fA = x => s.A.rate * x + s.A.fee;
-  const fB = x => s.B.rate * x + s.B.fee;
+  // plot the system the learner set up, and cross it where their lines actually cross
+  const p = state.picks;
+  const pick = (v, fallback) => (typeof v === 'number' ? v : fallback);
+  const rA = pick(p.a1, s.A.rate), kA = pick(p.b1, s.A.fee);
+  const rB = pick(p.a2, s.B.rate), kB = pick(p.b2, s.B.fee);
+  const fA = x => rA * x + kA;
+  const fB = x => rB * x + kB;
   const cA = '#2f7de1', cB = '#e0731a';
-  const xi = s.xAns, yi = s.yAns;
+  const parallel = rA === rB;
+  const xi = parallel ? 0 : (kB - kA) / (rA - rB);
+  const yi = fA(xi);
+  const inView = !parallel && xi >= 0 && xi <= pl.xMax && yi >= 0 && yi <= pl.yMax;
+  const fmt = v => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100));
 
   const line = (f, col) => '<line x1="' + X(0).toFixed(1) + '" y1="' + Y(f(0)).toFixed(1) +
     '" x2="' + X(pl.xMax).toFixed(1) + '" y2="' + Y(f(pl.xMax)).toFixed(1) +
@@ -785,26 +794,40 @@ function plotSVG() {
     'paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" fill="' + col + '">' +
     txt + '</text>';
 
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '">' +
-    // the region each provider owns
+  const regions = !inView ? '' :
     '<rect x="' + X(0) + '" y="' + mt + '" width="' + (X(xi) - X(0)) + '" height="' + (H - mt - mb) +
       '" fill="#eaf2fd"/>' +
     '<rect x="' + X(xi) + '" y="' + mt + '" width="' + (X(pl.xMax) - X(xi)) + '" height="' + (H - mt - mb) +
       '" fill="#fdf1e7"/>' +
     halo(((X(0) + X(xi)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#2f7de1',
-      s.A.name + ' cheaper') +
+      (rA < rB ? s.B.name : s.A.name) + ' cheaper') +
     halo(((X(xi) + X(pl.xMax)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#c2610f',
-      s.B.name + ' cheaper') +
+      (rA < rB ? s.A.name : s.B.name) + ' cheaper');
+
+  const crossing = !inView ? (parallel
+      ? halo((W / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#8a8a94',
+             'these lines never cross')
+      : '') :
+    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(xi) + '" y2="' + Y(0) +
+      '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>' +
+    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(0) + '" y2="' + Y(yi) +
+      '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>';
+
+  const marker = !inView ? '' :
+    '<circle cx="' + X(xi) + '" cy="' + Y(yi) + '" r="5" fill="#2ecc40" stroke="#1e9e31" stroke-width="2"/>' +
+    halo((X(xi) + 8).toFixed(1), (Y(yi) - 13).toFixed(1), 'start', '#17853a',
+      '(' + fmt(xi) + ', ' + fmt(yi) + ')') +
+    halo((X(xi)).toFixed(1), (Y(0) + 12).toFixed(1), 'middle', '#6a6a74', fmt(xi)) +
+    halo((ml - 3).toFixed(1), (Y(yi) + 3).toFixed(1), 'end', '#6a6a74', '$' + fmt(yi));
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '">' +
+    regions +
     // axes
     '<line x1="' + ml + '" y1="' + Y(0) + '" x2="' + (W - mr) + '" y2="' + Y(0) +
       '" stroke="#c9c9d2" stroke-width="1"/>' +
     '<line x1="' + X(0) + '" y1="' + mt + '" x2="' + X(0) + '" y2="' + (H - mb) +
       '" stroke="#c9c9d2" stroke-width="1"/>' +
-    // guides to the crossing
-    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(xi) + '" y2="' + Y(0) +
-      '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>' +
-    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(0) + '" y2="' + Y(yi) +
-      '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>' +
+    crossing +
     line(fA, cA) + line(fB, cB) +
     // legend, tucked into the empty top-left of the plot
     '<line x1="' + (ml + 7) + '" y1="' + (mt + 9) + '" x2="' + (ml + 21) + '" y2="' + (mt + 9) +
@@ -813,13 +836,7 @@ function plotSVG() {
     '<line x1="' + (ml + 7) + '" y1="' + (mt + 24) + '" x2="' + (ml + 21) + '" y2="' + (mt + 24) +
       '" stroke="' + cB + '" stroke-width="2.6"/>' +
     halo((ml + 25).toFixed(1), (mt + 27).toFixed(1), 'start', cB, s.B.name) +
-    // the crossing
-    '<circle cx="' + X(xi) + '" cy="' + Y(yi) + '" r="5" fill="#2ecc40" stroke="#1e9e31" stroke-width="2"/>' +
-    halo((X(xi) + 8).toFixed(1), (Y(yi) - 13).toFixed(1), 'start', '#17853a',
-      '(' + xi + ', ' + yi + ')') +
-    // axis ticks at the crossing
-    halo((X(xi)).toFixed(1), (Y(0) + 12).toFixed(1), 'middle', '#6a6a74', String(xi)) +
-    halo((ml - 3).toFixed(1), (Y(yi) + 3).toFixed(1), 'end', '#6a6a74', '$' + yi) +
+    marker +
     '<text x="' + (W - mr) + '" y="' + (H - 6) + '" text-anchor="end" font-size="9.5" fill="#8a8a94">' +
       pl.xLabel + '</text>' +
     '<text x="2" y="' + (mt - 5) + '" font-size="9.5" fill="#8a8a94">' + pl.yLabel + '</text>' +
