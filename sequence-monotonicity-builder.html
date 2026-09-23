@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branching Argument Builder — Sequence Monotonicity</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex; justify-content: center; align-items: flex-start; gap: 24px;
+    padding: 24px 20px 60px; min-height: 100vh;
+  }
+
+  /* ---------- author controls ---------- */
+  .rail { width: 300px; display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #8a8a94; font-weight: 600; margin-bottom: 10px;
+  }
+  .card p { font-size: 13px; line-height: 1.5; color: #444; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .dataset-btn {
+    display: block; width: 100%; text-align: left;
+    padding: 9px 12px; margin-bottom: 6px;
+    border: 1.5px solid #e2e2e8; border-radius: 9px; background: #fff;
+    font-size: 13px; font-weight: 500; color: #333; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .dataset-btn:hover { border-color: #c9c9d2; background: #fafafb; }
+  .dataset-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  .dataset-btn .sub { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 3px; }
+  .dataset-btn .sub .katex { font-size: 1em; }
+  .dataset-btn:last-child { margin-bottom: 0; }
+
+  .tree { font-size: 12.5px; line-height: 1.7; color: #444; }
+  .tree code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px; background: #f2f2f5; padding: 1px 4px; border-radius: 4px;
+  }
+  .tree .branch { padding-left: 14px; border-left: 2px solid #e6e6ec; margin: 4px 0 4px 4px; }
+  .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; color: #fff;
+  }
+  .tag.up   { background: #0f8a6a; }
+  .tag.down { background: #2f7de1; }
+  .tag.nei  { background: #b5379a; }
+
+  /* ---------- phone ---------- */
+  .phone {
+    width: 375px; min-height: 760px;
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex; flex-direction: column; position: relative; flex: none;
+  }
+
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #c5cc3c; border-radius: 3px; transition: width 0.35s ease; }
+  .bolt { font-size: 16px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* context block (grey card, like the reference) */
+  .context-block { background: #f5f5f7; border-radius: 12px; padding: 14px; }
+  .context-text { font-size: 14px; line-height: 1.55; color: #1a1a1a; }
+  /* keep a rule or a condition whole when the sentence wraps */
+  .context-text .katex { white-space: nowrap; }
+  .terms-caption {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid #e4e4ea;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; text-align: center; margin-bottom: 8px;
+  }
+  .terms { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+  .term {
+    background: #fff; border: 1px solid #e0e0e8; border-radius: 7px;
+    padding: 4px 6px; font-size: 12.5px; color: #1a1a1a; white-space: nowrap;
+  }
+  .term .katex { font-size: 0.97em; }
+
+  /* argument block (white card with border) */
+  .argument-block {
+    border: 1px solid #e4e4ea; border-radius: 12px; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .line { font-size: 14px; line-height: 2.1; color: #1a1a1a; }
+
+  /* fragments are inline, so transforms would not apply — fade only */
+  .reveal { animation: fadeIn 0.33s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .frag { display: inline; }
+  .frag.reveal .slot, .line.reveal .slot { animation: slotUp 0.33s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes slotUp {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 54px; min-height: 30px; padding: 2px 9px; margin: 0 2px;
+    border: 1.5px solid #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s; text-align: center;
+  }
+  .slot.empty { background: #fafafa; }
+  .slot.active { border-color: #1a1a1a; background: #fff; box-shadow: 0 0 0 3px rgba(26,26,26,0.08); }
+  .slot.filled { border-color: #b9b9c4; background: #f2f2f5; }
+  .slot.right  { border-color: #2ecc40; background: #eafbea; }
+  .slot.wrong  { border-color: #e74c3c; background: #fdeeec; }
+  .slot .katex { font-size: 0.95em; }
+
+  /* bank */
+  .bank-area {
+    background: #f7f8fa; border-top: 1px solid #e8e8e8;
+    padding: 10px 12px 12px; min-height: 96px;
+  }
+  .bank-caption {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-bottom: 8px; text-align: center;
+  }
+  .bank { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+  .tile {
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    padding: 8px 12px; font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.12s; font-family: inherit;
+  }
+  .tile:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .tile:active { transform: scale(0.96); background: #ededf2; }
+  .tile .katex { font-size: 0.95em; }
+
+  .feedback {
+    font-size: 13px; line-height: 1.45; padding: 4px 16px 0; min-height: 18px;
+    color: #666; text-align: center;
+  }
+  .feedback.good { color: #17853a; }
+  .feedback.bad { color: #c0392b; }
+
+  .bottom-bar { padding: 10px 16px 20px; display: flex; gap: 10px; align-items: center; }
+  .check-btn {
+    flex: 1; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: default; transition: all 0.3s; font-family: inherit;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; cursor: pointer; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+  .check-btn.incorrect { background: #e74c3c; color: #fff; }
+  .reset-btn {
+    height: 46px; padding: 0 16px; border-radius: 23px;
+    border: 1.5px solid #e0e0e6; background: #fff; color: #666;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #f7f7f9; }
+</style>
+</head>
+<body>
+
+<!-- ============ left rail: scenario switcher ============ -->
+<div class="rail">
+  <div class="card">
+    <h2>Scenario</h2>
+    <div id="dataset-buttons"></div>
+    <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
+      One question shell — only the rule changes. The terms, and every comparison tile built from
+      them, are computed from the rule, so the bank can never disagree with the sequence.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Why evidence, not just a label</h2>
+    <p>Naming a sequence <em>increasing</em> is a guess until it is tied to a claim about
+      <em>every</em> consecutive pair.</p>
+    <p>&ldquo;Neither&rdquo; is the interesting answer: it is true for two quite different reasons, and the
+      learner has to say which one they mean before they can produce the evidence.</p>
+  </div>
+</div>
+
+<!-- ============ phone ============ -->
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="context-block">
+      <div class="context-text" id="context-text"></div>
+      <div class="terms-caption">First five terms</div>
+      <div class="terms" id="terms"></div>
+    </div>
+
+    <div class="argument-block" id="argument"></div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="bank-area">
+    <div class="bank-caption" id="bank-caption">Tap to fill the blank</div>
+    <div class="bank" id="bank"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" id="reset">Reset</button>
+    <button class="check-btn" id="check">Check</button>
+  </div>
+</div>
+
+<!-- ============ right rail: branch map ============ -->
+<div class="rail">
+  <div class="card">
+    <h2>Branch map</h2>
+    <div class="tree">
+      <strong>1.</strong> The sequence is <code>?</code>
+      <div class="branch">
+        <span class="tag up">increasing</span> →<br>
+        <strong>2.</strong> because <code>a<sub>n+1</sub></code> <code>?</code> <code>a<sub>n</sub></code>
+        for every <code>n</code>
+        <div class="branch">correct tile: <code>&gt;</code></div>
+      </div>
+      <div class="branch">
+        <span class="tag down">decreasing</span> →<br>
+        <strong>2.</strong> same sentence, correct tile: <code>&lt;</code>
+      </div>
+      <div class="branch">
+        <span class="tag nei">neither</span> →<br>
+        <strong>2.</strong> because the terms <code>?</code>
+        <div class="branch">
+          <strong>change direction</strong> →<br>
+          <strong>3.</strong> For example, <code>?</code> but <code>?</code><br>
+          <span style="color:#8a8a94">two true comparisons pointing opposite ways</span>
+        </div>
+        <div class="branch">
+          <strong>repeat a value</strong> →<br>
+          <strong>3.</strong> For example, <code>?</code><br>
+          <span style="color:#8a8a94">one equality that actually holds</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Notes</h2>
+    <p><strong>The depth of the argument is chosen by the learner.</strong> Two blanks settle
+      increasing or decreasing; &ldquo;neither&rdquo; costs a third and sometimes a fourth, because that
+      claim genuinely needs more evidence.</p>
+    <p><strong>The counterexample pair is graded by rule, not by an answer key.</strong> Any two
+      comparisons that are both true and point in opposite directions are accepted — there are
+      several honest ways to show a sequence turns around, and none of them is the &ldquo;expected&rdquo; one.</p>
+    <p><strong>Every tile bank is generated from the computed terms</strong>, with the false direction
+      of each pair kept in as a distractor. Editing a rule can never leave a stale tile behind.</p>
+    <p><strong>A wrong first choice still finishes.</strong> Call a decreasing sequence increasing and
+      you are handed the same evidence sentence, build a complete argument, and it fails on Check —
+      with the red box on the claim that actually broke.</p>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- scenarios
+// Each scenario supplies a rule as a function of n; the first five terms, and
+// therefore every comparison tile, are computed from it.
+const SCENARIOS = {
+  'linear-up': {
+    name: 'Increasing',
+    tex: 'a_n = 3n + 2',
+    term: n => 3 * n + 2
+  },
+  'linear-down': {
+    name: 'Decreasing',
+    tex: 'a_n = 10 - 2n',
+    term: n => 10 - 2 * n
+  },
+  'alternating': {
+    name: 'Neither — changes direction',
+    tex: 'a_n = (-1)^n \\cdot n',
+    term: n => Math.pow(-1, n) * n
+  },
+  'constant': {
+    name: 'Neither — repeats a value',
+    tex: 'a_n = 4',
+    term: () => 4
+  }
+};
+
+const N = 5;
+
+const state = { key: 'linear-up', picks: {}, checked: false };
+let seen = new Set();
+
+function S() { return SCENARIOS[state.key]; }
+function K(tex, opts) { return katex.renderToString(tex, Object.assign({ throwOnError: false }, opts || {})); }
+
+// terms[0] is unused so that terms[i] is a_i
+function terms() {
+  const t = [null];
+  for (let i = 1; i <= N; i++) t.push(S().term(i));
+  return t;
+}
+
+// ---------------------------------------------------------------- facts about the sequence
+function isIncreasing() {
+  const t = terms();
+  for (let i = 1; i < N; i++) if (!(t[i + 1] > t[i])) return false;
+  return true;
+}
+function isDecreasing() {
+  const t = terms();
+  for (let i = 1; i < N; i++) if (!(t[i + 1] < t[i])) return false;
+  return true;
+}
+function changesDirection() {
+  const t = terms();
+  let up = false, down = false;
+  for (let i = 1; i < N; i++) {
+    if (t[i + 1] > t[i]) up = true;
+    if (t[i + 1] < t[i]) down = true;
+  }
+  return up && down;
+}
+function hasRepeat() {
+  const t = terms();
+  for (let i = 1; i <= N; i++)
+    for (let j = i + 1; j <= N; j++) if (t[i] === t[j]) return true;
+  return false;
+}
+function trueDirection() {
+  if (isIncreasing()) return 'increasing';
+  if (isDecreasing()) return 'decreasing';
+  return 'neither';
+}
+
+// ---------------------------------------------------------------- comparison tiles
+// id form: "<i><op><j>", e.g. 2gt1 is  a_2 > a_1
+const OPS = { gt: '>', lt: '<', eq: '=' };
+
+function parseComp(id) {
+  const m = /^(\d+)(gt|lt|eq)(\d+)$/.exec(id);
+  return m ? { i: +m[1], op: m[2], j: +m[3] } : null;
+}
+function compTex(id) {
+  const c = parseComp(id);
+  return 'a_' + c.i + ' ' + OPS[c.op] + ' a_' + c.j;
+}
+// does this comparison actually hold for the current sequence?
+function compHolds(id) {
+  const c = parseComp(id), t = terms();
+  if (c.op === 'gt') return t[c.i] > t[c.j];
+  if (c.op === 'lt') return t[c.i] < t[c.j];
+  return t[c.i] === t[c.j];
+}
+
+// Both directions of three consecutive pairs: for any pair exactly one of the
+// two tiles is true (or, if the terms are equal, neither is) — so the bank
+// always carries genuine distractors.
+function directionBank() {
+  const out = [];
+  [[2, 1], [3, 2], [4, 3]].forEach(([i, j]) => {
+    out.push(i + 'gt' + j);
+    out.push(i + 'lt' + j);
+  });
+  return out;
+}
+// Equalities to choose between, plus two strict comparisons that are never
+// evidence of a repeat even when they happen to be true.
+function repeatBank() {
+  return ['1eq2', '2eq3', '1eq5', '2gt1', '2lt1'];
+}
+
+// ---------------------------------------------------------------- blanks
+function blankOrder() {
+  const o = ['dir'];
+  const d = state.picks.dir;
+  if (d === 'increasing' || d === 'decreasing') o.push('cmp');
+  if (d === 'neither') {
+    o.push('why');
+    if (state.picks.why === 'direction') o.push('ex1', 'ex2');
+    if (state.picks.why === 'repeat') o.push('eq');
+  }
+  return o;
+}
+function filled(b) { return state.picks[b] !== undefined && state.picks[b] !== null; }
+function activeBlank() { return blankOrder().find(b => !filled(b)) || null; }
+function allDone() { return blankOrder().every(filled); }
+
+const DIR_OPTIONS = [
+  { id: 'increasing', text: 'increasing' },
+  { id: 'decreasing', text: 'decreasing' },
+  { id: 'neither',    text: 'neither' }
+];
+const WHY_OPTIONS = [
+  { id: 'direction', text: 'change direction' },
+  { id: 'repeat',    text: 'repeat a value' }
+];
+const CMP_OPTIONS = ['gt', 'lt', 'eq'].map(op => ({ id: op, html: K(OPS[op]) }));
+
+function optionsFor(b) {
+  if (b === 'dir') return DIR_OPTIONS;
+  if (b === 'why') return WHY_OPTIONS;
+  if (b === 'cmp') return CMP_OPTIONS;
+  if (b === 'ex1' || b === 'ex2')
+    return directionBank().map(id => ({ id: id, html: K(compTex(id)) }));
+  if (b === 'eq')
+    return repeatBank().map(id => ({ id: id, html: K(compTex(id)) }));
+  return [];
+}
+function labelFor(b, id) {
+  const o = optionsFor(b).find(o => String(o.id) === String(id));
+  if (!o) return '';
+  return o.html || o.text;
+}
+
+// ---------------------------------------------------------------- grading
+// Everything is graded against the sequence itself, never against a stored key,
+// so any honest piece of evidence is accepted.
+function pairIsValid() {
+  const a = state.picks.ex1, b = state.picks.ex2;
+  if (!a || !b) return false;
+  if (!compHolds(a) || !compHolds(b)) return false;
+  const da = parseComp(a).op, db = parseComp(b).op;
+  // one must be a rise and the other a fall
+  return (da === 'gt' && db === 'lt') || (da === 'lt' && db === 'gt');
+}
+
+function isRight(b) {
+  const p = state.picks;
+  if (b === 'dir') return p.dir === trueDirection();
+  if (b === 'cmp') {
+    // "a_{n+1} ? a_n for every n" — check the claim against every consecutive pair
+    if (p.cmp === 'gt') return isIncreasing();
+    if (p.cmp === 'lt') return isDecreasing();
+    const t = terms();
+    for (let i = 1; i < N; i++) if (t[i + 1] !== t[i]) return false;
+    return true;
+  }
+  if (b === 'why') {
+    if (p.why === 'direction') return changesDirection();
+    if (p.why === 'repeat') return hasRepeat();
+    return false;
+  }
+  if (b === 'ex1' || b === 'ex2') return pairIsValid();
+  if (b === 'eq') return !!p.eq && parseComp(p.eq).op === 'eq' && compHolds(p.eq);
+  return false;
+}
+
+// ---------------------------------------------------------------- rendering
+function slotHTML(b, wide) {
+  let cls = 'slot ' + (filled(b) ? 'filled' : 'empty');
+  if (!filled(b) && activeBlank() === b) cls += ' active';
+  if (state.checked && filled(b)) cls += isRight(b) ? ' right' : ' wrong';
+  const label = filled(b) ? labelFor(b, state.picks[b]) : '&nbsp;';
+  return '<span class="' + cls + '" data-blank="' + b + '"' +
+         (wide ? ' style="min-width:' + wide + 'px"' : '') + '>' + label + '</span>';
+}
+
+// each fragment has a stable key so it only animates the first time it appears
+function frag(key, html) {
+  const isNew = !seen.has(key);
+  seen.add(key);
+  return '<span class="frag' + (isNew ? ' reveal' : '') + '">' + html + '</span>';
+}
+function lineOpen(key) {
+  const isNew = !seen.has('line-' + key);
+  seen.add('line-' + key);
+  return '<div class="line' + (isNew ? ' reveal' : '') + '">';
+}
+
+function renderDatasetButtons() {
+  const host = document.getElementById('dataset-buttons');
+  host.innerHTML = '';
+  Object.entries(SCENARIOS).forEach(([key, s]) => {
+    const b = document.createElement('button');
+    b.className = 'dataset-btn' + (key === state.key ? ' active' : '');
+    b.innerHTML = s.name + '<span class="sub">' + K(s.tex) + '</span>';
+    b.onclick = () => { state.key = key; resetPicks(); renderAll(); };
+    host.appendChild(b);
+  });
+}
+
+function renderContext() {
+  document.getElementById('context-text').innerHTML =
+    'A sequence is defined by ' + K(S().tex) + ' for ' + K('n \\ge 1') + '.';
+  const t = terms();
+  let html = '';
+  for (let i = 1; i <= N; i++) {
+    html += '<span class="term">' + K('a_' + i + ' = ' + t[i]) + '</span>';
+  }
+  document.getElementById('terms').innerHTML = html;
+}
+
+function renderArgument() {
+  const p = state.picks;
+  let html = '';
+
+  // ---- sentence 1 (always)
+  html += lineOpen('s1');
+  html += frag('l1a', 'The sequence is ' + slotHTML('dir', 104));
+  if (filled('dir')) html += frag('l1b', ',');
+  html += '</div>';
+
+  // ---- sentence 2, chosen by that answer
+  if (p.dir === 'increasing' || p.dir === 'decreasing') {
+    html += lineOpen('s2-cmp');
+    html += frag('l2-cmp-a',
+      'because ' + K('a_{n+1}') + ' ' + slotHTML('cmp', 46) + ' ' + K('a_n') +
+      ' for every ' + K('n'));
+    if (filled('cmp')) html += frag('l2-cmp-b', '.');
+    html += '</div>';
+  }
+
+  if (p.dir === 'neither') {
+    html += lineOpen('s2-nei');
+    html += frag('l2-nei-a', 'because the terms ' + slotHTML('why', 126));
+    if (filled('why')) html += frag('l2-nei-b', '.');
+    html += '</div>';
+
+    // ---- sentence 3a: two counterexamples pointing opposite ways
+    if (p.why === 'direction') {
+      html += lineOpen('s3-dir');
+      html += frag('l3-dir-a', 'For example, ' + slotHTML('ex1', 78));
+      if (filled('ex1')) html += frag('l3-dir-b', ' but ' + slotHTML('ex2', 78));
+      if (filled('ex2')) html += frag('l3-dir-c', '.');
+      html += '</div>';
+    }
+
+    // ---- sentence 3b: one equality that holds
+    if (p.why === 'repeat') {
+      html += lineOpen('s3-rep');
+      html += frag('l3-rep-a', 'For example, ' + slotHTML('eq', 78));
+      if (filled('eq')) html += frag('l3-rep-b', '.');
+      html += '</div>';
+    }
+  }
+
+  document.getElementById('argument').innerHTML = html;
+  document.querySelectorAll('.slot').forEach(el => {
+    el.onclick = () => onSlotClick(el.dataset.blank);
+  });
+}
+
+function renderBank() {
+  const b = activeBlank();
+  const bank = document.getElementById('bank');
+  const caption = document.getElementById('bank-caption');
+  bank.innerHTML = '';
+  if (!b) { caption.textContent = 'Tap any boxed answer to change it'; return; }
+  caption.textContent =
+    b === 'dir' ? 'Classify the sequence' :
+    b === 'cmp' ? 'Compare the terms' :
+    b === 'why' ? 'Why is it neither?' :
+    b === 'eq'  ? 'Show two terms that are equal' :
+    b === 'ex1' ? 'Give a rise or a fall' :
+                  'Now give one pointing the other way';
+  optionsFor(b).forEach(o => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.innerHTML = o.html || o.text;
+    t.onclick = () => { state.picks[b] = o.id; state.checked = false; renderAll(); };
+    bank.appendChild(t);
+  });
+}
+
+function renderFooter() {
+  const btn = document.getElementById('check');
+  const fb = document.getElementById('feedback');
+  const order = blankOrder();
+
+  document.getElementById('progress').style.width =
+    Math.round(order.filter(filled).length / order.length * 100) + '%';
+
+  btn.className = 'check-btn' + (allDone() ? ' ready' : '');
+  btn.textContent = 'Check';
+  fb.textContent = ''; fb.className = 'feedback';
+
+  if (state.checked) {
+    const ok = order.every(isRight);
+    btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
+    btn.textContent = ok ? 'Correct' : 'Try again';
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    if (ok) {
+      fb.textContent = 'Classified and backed up by evidence — the whole argument holds.';
+    } else if (isRight('dir') && isRight('why') &&
+               state.picks.why === 'direction' && filled('ex2') &&
+               compHolds(state.picks.ex1) && compHolds(state.picks.ex2)) {
+      fb.textContent = 'Both comparisons are true, but they point the same way. Show one rise and one fall.';
+    } else {
+      fb.textContent = 'Something in the argument does not hold for this sequence. Tap a red box to rethink it.';
+    }
+  }
+}
+
+function renderAll() {
+  renderDatasetButtons();
+  renderContext();
+  renderArgument();
+  renderBank();
+  renderFooter();
+}
+
+// ---------------------------------------------------------------- interaction
+// tapping a filled slot clears it and everything after it
+const KEEP_ON_CLEAR = {
+  dir: ['line-s1', 'l1a'],
+  cmp: ['line-s1', 'l1a', 'l1b', 'line-s2-cmp', 'l2-cmp-a'],
+  why: ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a'],
+  ex1: ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a', 'l2-nei-b', 'line-s3-dir', 'l3-dir-a'],
+  ex2: ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a', 'l2-nei-b', 'line-s3-dir', 'l3-dir-a', 'l3-dir-b'],
+  eq:  ['line-s1', 'l1a', 'l1b', 'line-s2-nei', 'l2-nei-a', 'l2-nei-b', 'line-s3-rep', 'l3-rep-a']
+};
+
+function onSlotClick(b) {
+  const order = blankOrder();
+  const i = order.indexOf(b);
+  if (i === -1) return;
+  order.slice(i).forEach(k => { delete state.picks[k]; });
+  // fragments after this point should animate again when they return
+  seen = new Set(KEEP_ON_CLEAR[b] || []);
+  state.checked = false;
+  renderAll();
+}
+
+function resetPicks() { state.picks = {}; state.checked = false; seen = new Set(); }
+
+// optional deep link for sharing a specific state, e.g.
+// ?s=alternating&picks=dir:neither,why:direction,ex1:2gt1,ex2:3lt2&checked=1
+(function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('s') && SCENARIOS[q.get('s')]) state.key = q.get('s');
+  const raw = q.get('picks');
+  if (raw) {
+    raw.split(',').forEach(pair => {
+      const [k, v] = pair.split(':');
+      if (k && v) state.picks[k] = v;
+    });
+  }
+  if (q.get('checked') === '1') state.checked = true;
+  seen = new Set();
+})();
+
+document.getElementById('check').onclick = () => { if (allDone()) { state.checked = true; renderAll(); } };
+document.getElementById('reset').onclick = () => { resetPicks(); renderAll(); };
+
+renderAll();
+</script>
+
+</body>
+</html>
