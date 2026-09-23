@@ -261,7 +261,7 @@
   <div class="card">
     <h2>Branch map</h2>
     <div class="tree">
-      <strong>2.</strong> <code>b² − 4ac = ?</code>, so the equation has <code>?</code> real solutions
+      <strong>2.</strong> <code>b² − 4ac ? 0</code>, so the equation has <code>?</code> real solutions
       <div class="branch">
         <span class="tag two">two</span> → solve for <code>t = ?</code> or <code>t = ?</code><br>
         <strong>4.</strong> The solutions that make sense here are <code>?</code>, so <code>?</code>
@@ -323,7 +323,6 @@ const SCENARIOS = {
     std: { a: -5, b: 15, c: 20 },
     operandBank: [-5, -1, 1, 4, 5, 15, 20],
     disc: 625,
-    discBank: [-175, 25, 225, 625],
     count: 'two',
     roots: [-1, 4],
     rootBank: [-4, -1, 1, 4, 5],
@@ -349,7 +348,6 @@ const SCENARIOS = {
     std: { a: -5, b: 20, c: -20 },
     operandBank: [-5, -1, 2, 4, 5, 20],
     disc: 0,
-    discBank: [-400, 0, 400, 800],
     count: 'one',
     roots: [2],
     rootBank: [-2, 1, 2, 4],
@@ -375,7 +373,6 @@ const SCENARIOS = {
     std: { a: -5, b: 20, c: -30 },
     operandBank: [-5, -1, 2, 5, 6, 20, 30],
     disc: -200,
-    discBank: [-200, 200, 400, 1000],
     count: 'none',
     roots: [],
     rootBank: [-2, 1, 2, 3],
@@ -389,6 +386,13 @@ const SCENARIOS = {
     plot: { tMin: -0.6, tMax: 4.6, hMin: -6, hMax: 38 }
   }
 };
+
+// only the sign of the discriminant matters, so that is all we ask for
+const SIGNS = [
+  { id: 'gt', text: '>' },
+  { id: 'eq', text: '=' },
+  { id: 'lt', text: '<' }
+];
 
 const COUNTS = [
   { id: 'two',  text: 'two real solutions' },
@@ -585,7 +589,7 @@ function optionsFor(b) {
   const s = S();
   if (['a','b','c','target'].includes(b))
     return s.numberBank.map(n => ({ id: n, text: num(n) }));
-  if (b === 'disc')  return s.discBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'disc')  return SIGNS;
   if (b === 'count') return COUNTS;
   if (b === 'r1' || b === 'r2')
     return s.rootBank.map(n => ({ id: n, text: num(n) }));
@@ -604,7 +608,7 @@ function isRight(b) {
   if (b === 'b') return p.b === s.coeffs.b;
   if (b === 'c') return p.c === s.coeffs.c;
   if (b === 'target') return p.target === s.target;
-  if (b === 'disc')   return p.disc === s.disc;
+  if (b === 'disc')   return p.disc === (s.disc > 0 ? 'gt' : s.disc < 0 ? 'lt' : 'eq');
   if (b === 'count')  return p.count === s.count;
   if (b === 'r1' || b === 'r2') {
     if (s.count !== p.count) return false;
@@ -695,7 +699,7 @@ function renderStages() {
   // ---- stage 2: count
   if (stage1Done()) {
     let s2 = '<div class="line" style="text-align:center">' +
-      K('b^2 - 4ac =') + ' ' + slotHTML('disc') + '</div>';
+      K('b^2 - 4ac') + ' ' + slotHTML('disc', 44) + ' ' + K('0') + '</div>';
     if (filled('disc')) {
       s2 += frag('count-line',
         '<div class="line" style="text-align:center">so the equation has ' + slotHTML('count', 120) + '</div>');
@@ -892,7 +896,7 @@ function renderBank() {
   if (!b) { caption.textContent = 'Tap any boxed answer to change it'; return; }
   caption.textContent =
     ['a','b','c','target'].includes(b) ? 'Build the equation' :
-    b === 'disc'   ? 'Evaluate the discriminant' :
+    b === 'disc'   ? 'Compare the discriminant with zero' :
     b === 'count'  ? 'How many real solutions?' :
     b === 'accept' ? 'Tap the solutions you want to keep' :
     b === 'concl'  ? 'Say what it means' : 'Solve for t';
