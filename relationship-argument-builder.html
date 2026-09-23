@@ -236,7 +236,8 @@
       <strong>1.</strong> Each week, the number of new hires <code>?</code>
       <div class="branch">
         <strong>stays the same</strong> →<br>
-        <strong>2.</strong> The ratio <code>E / w</code> <code>?</code>, so the relationship is <code>?</code>
+        <strong>2.</strong> The ratio <code>E / w</code> <code>?</code>, so the relationship between
+        <span class="v-w">w</span> and <span class="v-e">E</span> is <code>?</code>
         <div class="branch">
           is constant → <span class="tag prop">proportional</span><br>
           varies → <span class="tag lin">linear, not proportional</span>
@@ -245,7 +246,7 @@
       <div class="branch">
         <strong>changes</strong> →<br>
         <strong>2.</strong> From week to week, the number of new hires <code>?</code>,
-        so the relationship is <code>?</code>
+        so the relationship between <span class="v-w">w</span> and <span class="v-e">E</span> is <code>?</code>
         <div class="branch">
           by a constant amount → <span class="tag quad">quadratic</span><br>
           by a constant factor → <span class="tag exp">exponential</span>
@@ -405,7 +406,9 @@ function renderArgument() {
       html += frag('l2-non-a', 'From week to week, the number of new hires ' + slotHTML('s2'));
     }
     if (p.s2) {
-      html += frag('l2b-' + p.s1, ', so the relationship is ' + slotHTML('s3'));
+      html += frag('l2b-' + p.s1,
+        ', so the relationship between <span class="v-w">w</span> and <span class="v-e">E</span> is '
+        + slotHTML('s3'));
       if (p.s3) html += frag('l2c-' + p.s1, '.');
     }
     html += '</div>';
