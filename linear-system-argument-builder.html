@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branching Argument Builder — Linear System + Solver</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex; justify-content: center; align-items: flex-start; gap: 24px;
+    padding: 24px 20px 60px; min-height: 100vh;
+  }
+
+  .rail { width: 300px; display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #8a8a94; font-weight: 600; margin-bottom: 10px;
+  }
+  .card p { font-size: 13px; line-height: 1.5; color: #444; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .dataset-btn {
+    display: block; width: 100%; text-align: left;
+    padding: 9px 12px; margin-bottom: 6px;
+    border: 1.5px solid #e2e2e8; border-radius: 9px; background: #fff;
+    font-size: 13px; font-weight: 500; color: #333; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .dataset-btn:hover { border-color: #c9c9d2; background: #fafafb; }
+  .dataset-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  .dataset-btn .sub { display: block; font-size: 11px; font-weight: 400; opacity: 0.65; margin-top: 2px; }
+  .dataset-btn:last-child { margin-bottom: 0; }
+
+  .tree { font-size: 12.5px; line-height: 1.7; color: #444; }
+  .tree code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px; background: #f2f2f5; padding: 1px 4px; border-radius: 4px;
+  }
+  .tree .branch { padding-left: 14px; border-left: 2px solid #e6e6ec; margin: 4px 0 4px 4px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #fff; }
+  .tag.set { background: #2f7de1; }
+  .tag.solve { background: #0f8a6a; }
+  .tag.read { background: #b5379a; }
+
+  /* ---------- phone ---------- */
+  .phone {
+    width: 375px; min-height: 812px;
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex; flex-direction: column; position: relative; flex: none;
+  }
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #c5cc3c; border-radius: 3px; transition: width 0.35s ease; }
+  .bolt { font-size: 16px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .context-block { background: #f5f5f7; border-radius: 12px; padding: 14px; }
+  .context-text { font-size: 14px; line-height: 1.5; color: #1a1a1a; }
+  .model-line {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #e4e4ea;
+    font-size: 12.5px; color: #6a6a74; display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .stage {
+    border: 1px solid #e4e4ea; border-radius: 12px; padding: 12px 14px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stage-head {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600;
+  }
+  .stage-head .n {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; background: #e9e9ef;
+    color: #6a6a74; font-size: 10px; margin-right: 6px; vertical-align: 1px;
+  }
+  .line { font-size: 14px; line-height: 2.1; color: #1a1a1a; }
+  .derived { font-size: 14px; color: #1a1a1a; text-align: center; padding: 2px 0; }
+  .eq { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font-size: 15px; }
+  .co { font-size: 12.5px; color: #6a6a74; margin-right: 2px; }
+
+  .reveal { animation: fadeIn 0.33s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .frag { display: inline; }
+  .frag.reveal .slot, .stage.reveal .slot { animation: slotUp 0.33s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes slotUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 46px; min-height: 30px; padding: 2px 9px; margin: 0 2px;
+    border: 1.5px solid #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s; text-align: center;
+  }
+  .slot.empty { background: #fafafa; }
+  .slot.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.08); background: #fff; }
+  .slot.filled { border-color: #b9b9c4; background: #f2f2f5; }
+  .slot.right { border-color: #2ecc40; background: #eafbea; }
+  .slot.wrong { border-color: #e74c3c; background: #fdeeec; }
+  .slot .katex { font-size: 0.95em; }
+
+  /* ---------- transformer workspace ---------- */
+  .workspace {
+    background: #fafafb; border: 1px solid #ededf2; border-radius: 10px;
+    padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .eqrow { font-size: 15px; color: #8a8a94; padding: 1px 0; display: flex; align-items: baseline; gap: 6px; }
+  .eqrow.current { color: #1a1a1a; }
+  .rowlab {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px; color: #9a9aa4; background: #f0f0f4; border-radius: 4px;
+    padding: 1px 4px; line-height: 1.4;
+  }
+  .case.active .rowlab { background: #1a1a1a; color: #fff; }
+  .via {
+    font-size: 10px; color: #9a9aa4; background: #f0f0f4; border-radius: 10px;
+    padding: 1px 8px; margin: 3px 0; font-variant-numeric: tabular-nums;
+  }
+  .cases { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+  .cases.stack { flex-direction: column; gap: 6px; }
+  .case {
+    flex: 1; border: 1.5px solid #e4e4ea; border-radius: 9px; padding: 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer; background: #fff; transition: all 0.15s;
+  }
+  .case.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.06); }
+  .case .eqrow { font-size: 15px; color: #1a1a1a; }
+  .case-done { font-size: 10px; color: #17853a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .case-hint { font-size: 10.5px; color: #a0a0aa; margin-top: 4px; }
+  .log-head {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #b0b0ba; font-weight: 600; align-self: flex-start; margin-bottom: 2px;
+  }
+  .log { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .ws-sep { width: 100%; height: 1px; background: #ededf2; margin: 8px 0 4px; }
+
+  .actions-bank, .operand-bar {
+    display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px;
+  }
+  .operand-bar { align-items: center; }
+  .operand-label { font-size: 12px; color: #6a6a74; margin-right: 2px; }
+  .pill {
+    border: 1.5px solid #d4d7e0; background: #fff; border-radius: 14px;
+    padding: 5px 10px; font-size: 12px; color: #333; cursor: pointer;
+    font-family: inherit; transition: all 0.12s;
+  }
+  .pill:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .pill:active { transform: scale(0.95); background: #ededf2; }
+  .pill.undo { border-color: #ededf2; color: #9a9aa4; }
+  .pill.operand { min-width: 38px; font-variant-numeric: tabular-nums; }
+  .pill.cancel { border-color: #ededf2; color: #9a9aa4; padding: 5px 9px; }
+  .tf-message { font-size: 11.5px; color: #c0392b; text-align: center; margin-top: 6px; line-height: 1.4; }
+  .final-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-top: 10px; text-align: center;
+  }
+
+  .plot { margin-top: 2px; }
+  .plot svg { width: 100%; display: block; }
+
+  .bank-area { background: #f7f8fa; border-top: 1px solid #e8e8e8; padding: 10px 12px 12px; min-height: 92px; }
+  .bank-caption {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-bottom: 8px; text-align: center;
+  }
+  .bank { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+  .tile {
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    padding: 8px 12px; font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.12s; font-family: inherit;
+  }
+  .tile:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .tile:active { transform: scale(0.96); background: #ededf2; }
+
+  .feedback { font-size: 13px; line-height: 1.45; padding: 4px 16px 0; min-height: 18px; color: #666; text-align: center; }
+  .feedback.good { color: #17853a; }
+  .feedback.bad { color: #c0392b; }
+
+  .bottom-bar { padding: 10px 16px 20px; display: flex; gap: 10px; align-items: center; }
+  .check-btn {
+    flex: 1; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: default; transition: all 0.3s; font-family: inherit;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; cursor: pointer; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+  .check-btn.incorrect { background: #e74c3c; color: #fff; }
+  .reset-btn {
+    height: 46px; padding: 0 16px; border-radius: 23px;
+    border: 1.5px solid #e0e0e6; background: #fff; color: #666;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #f7f7f9; }
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <div class="card">
+    <h2>Scenario</h2>
+    <div id="dataset-buttons"></div>
+    <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
+      One question shell. Two providers, a fixed fee and a per-unit rate each — the learner models
+      the pair, solves the system, and then says which provider wins on each side of the crossing.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>The three moves</h2>
+    <p><strong>1 Set up</strong> — turn each sentence into
+      <em>c</em> = rate &times; amount + fee. Both equations are built at once; an equation reads
+      badly half-finished.</p>
+    <p><strong>2 Solve</strong> — a SystemOfEquationsTransformer-style workspace to do the algebra
+      in, then the two final-answer blanks that are actually graded.</p>
+    <p><strong>3 Interpret</strong> — the crossing is a <em>price</em> and an <em>amount</em>, and
+      it splits the number line into a region each provider owns.</p>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="context-block">
+      <div class="context-text" id="context-text"></div>
+      <div class="model-line" id="model-line"></div>
+    </div>
+    <div id="stages"></div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="bank-area">
+    <div class="bank-caption" id="bank-caption">Tap to fill the blank</div>
+    <div class="bank" id="bank"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" id="reset">Reset</button>
+    <button class="check-btn" id="check">Check</button>
+  </div>
+</div>
+
+<div class="rail">
+  <div class="card">
+    <h2>Branch map</h2>
+    <div class="tree">
+      <span class="tag set">set up</span> two equations, <code>c = ? d + ?</code> twice
+      <div class="branch">
+        <span class="tag solve">solve</span> in the workspace, commit to
+        <code>d = ?</code> and <code>c = ?</code>
+        <div class="branch">
+          <span class="tag read">interpret</span> both cost <code>?</code> at <code>?</code><br>
+          longer → <code>?</code> is cheaper &nbsp;·&nbsp; shorter → <code>?</code> is cheaper
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
+      The interpret stage is where the algebra stops being a pair of numbers: <em>d</em> is the
+      break-even amount and <em>c</em> is the break-even price, and the sign of the rate difference
+      decides who owns each side of it.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Notes</h2>
+    <p><strong>Stage 1's four blanks are all visible at once</strong> — an equation reads badly
+      half-built — while the sentence blanks in stage 3 still arrive one at a time.</p>
+    <p>The <strong>rate blanks come before the fee blanks</strong> in tap order, so the learner has
+      to decide which number is "per km" before the easy one.</p>
+    <p>The <strong>graph appears only at the very end</strong>. Shown earlier it gives away the
+      crossing; shown last it turns "longer trips" and "shorter trips" into two shaded regions you
+      can point at.</p>
+  </div>
+
+  <div class="card">
+    <h2>The solve workspace</h2>
+    <p>Stage 2 is a small <strong>SystemOfEquationsTransformer</strong>: rows <code>A</code> and
+      <code>B</code>, a bank of action pills, a step row per transformation, and Undo. Instead of
+      dragging a pill onto a row, <strong>tap a row to make it active</strong>, then tap a pill.</p>
+    <p>The intended route is <em>Substitute A into B → Subtract d → Subtract 3 → Substitute B into A
+      → Combine</em>. Add and Subtract take a constant <em>or</em> a variable term, so
+      <code>&minus;d</code> is a legal move.</p>
+    <p>It runs real algebra, not a script — any legal move is allowed, and illegal ones are refused
+      with a reason ("That would leave fractions", "Substitute needs the other equation to have a
+      single variable on its own").</p>
+    <p><strong>The workspace is scaffolding; the final-answer blanks are the commitment.</strong>
+      Nothing is auto-filled from the working-out.</p>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- scenarios
+const SCENARIOS = {
+  taxis: {
+    name: 'Taxis',
+    sub: 'c = 2d + 3 and c = d + 8',
+    context: 'EasyTaxis charges a $3 booking fee plus $2 per km. SpeedyCars charges an $8 booking ' +
+             'fee plus $1 per km. When do they cost the same?',
+    legend: 'c = cost in dollars, d = distance in km',
+    v1: 'c', v2: 'd',
+    A: { name: 'EasyTaxis', rate: 2, fee: 3 },
+    B: { name: 'SpeedyCars', rate: 1, fee: 8 },
+    setupBank: [1, 2, 3, 5, 8, 13],
+    operandBank: ['1', '2', '3', '5', '8', 'd', '2d', 'c'],
+    xAns: 5, yAns: 13,
+    xBank: [2, 3, 5, 8],
+    yBank: [5, 8, 11, 13],
+    costBank: [8, 11, 13, 16],
+    amountBank: [3, 5, 8],
+    unit: 'km',
+    amountText: n => n + ' km',
+    joiner: 'over a distance of',
+    longer: 'longer distances',
+    shorter: 'shorter distances',
+    verb: 'are',
+    amountPrompt: 'What distance?',
+    xPrompt: 'Solve for the distance',
+    plot: { xMax: 10, yMax: 24, xLabel: 'd (km)', yLabel: 'c ($)' }
+  },
+
+  gyms: {
+    name: 'Gyms',
+    sub: 'c = 10m + 20 and c = 5m + 50',
+    context: 'FitPlus charges a $20 joining fee plus $10 per month. GymGo charges a $50 joining ' +
+             'fee plus $5 per month. When do they cost the same?',
+    legend: 'c = cost in dollars, m = months of membership',
+    v1: 'c', v2: 'm',
+    A: { name: 'FitPlus', rate: 10, fee: 20 },
+    B: { name: 'GymGo', rate: 5, fee: 50 },
+    setupBank: [5, 10, 20, 30, 50, 80],
+    operandBank: ['5', '10', '20', '30', '50', 'm', '5m', 'c'],
+    xAns: 6, yAns: 80,
+    xBank: [3, 5, 6, 10],
+    yBank: [30, 50, 80, 110],
+    costBank: [50, 70, 80, 110],
+    amountBank: [5, 6, 10],
+    unit: 'months',
+    amountText: n => n + (n === 1 ? ' month' : ' months'),
+    joiner: 'after',
+    longer: 'longer memberships',
+    shorter: 'shorter memberships',
+    verb: 'is',
+    amountPrompt: 'After how long?',
+    xPrompt: 'Solve for the number of months',
+    plot: { xMax: 12, yMax: 160, xLabel: 'm (months)', yLabel: 'c ($)' }
+  }
+};
+
+const state = { key: 'taxis', picks: {}, checked: false, tf: null };
+let seen = new Set();
+
+function S() { return SCENARIOS[state.key]; }
+function K(tex, opts) { return katex.renderToString(tex, Object.assign({ throwOnError: false }, opts || {})); }
+function num(n) { return n < 0 ? '−' + Math.abs(n) : String(n); }
+
+// ================================================================ the solver
+// A small transformer in the spirit of SystemOfEquationsTransformer. Each of
+// the two rows is an equation; each side of an equation is a list of terms,
+// a term being { k, v } — a coefficient and an optional variable. A term may
+// carry `disp`, a magnitude string such as "2(5)" left behind by Substitute
+// and cleared by Combine.
+
+const ACTIONS = [
+  { id: 'add',       label: 'Add',           operand: true  },
+  { id: 'subtract',  label: 'Subtract',      operand: true  },
+  { id: 'multiply',  label: 'Multiply by',   operand: true  },
+  { id: 'divide',    label: 'Divide by',     operand: true  },
+  { id: 'combine',   label: 'Combine',       operand: false },
+  { id: 'replace',   label: 'Replace with A+B', operand: false },
+  { id: 'substitute',label: 'Substitute',    operand: false }
+];
+
+function startRows() {
+  const s = S();
+  return {
+    A: { L: [{ k: 1, v: s.v1 }], R: [{ k: s.A.rate, v: s.v2 }, { k: s.A.fee, v: null }] },
+    B: { L: [{ k: 1, v: s.v1 }], R: [{ k: s.B.rate, v: s.v2 }, { k: s.B.fee, v: null }] }
+  };
+}
+function newTF() {
+  return { hist: [{ rows: startRows(), via: null, changed: null }], row: 'A', pending: null, message: '' };
+}
+function tf() { if (!state.tf) state.tf = newTF(); return state.tf; }
+function curRows() { const h = tf().hist; return h[h.length - 1].rows; }
+function cloneSide(side) { return side.map(t => ({ k: t.k, v: t.v, disp: t.disp })); }
+function cloneRows(rows) {
+  return { A: { L: cloneSide(rows.A.L), R: cloneSide(rows.A.R) },
+           B: { L: cloneSide(rows.B.L), R: cloneSide(rows.B.R) } };
+}
+function other(r) { return r === 'A' ? 'B' : 'A'; }
+
+function parseOperand(str) {
+  const m = /^(-?\d*)([a-z]?)$/.exec(String(str));
+  if (!m) return null;
+  const v = m[2] || null;
+  let k = m[1] === '' || m[1] === '-' ? (m[1] === '-' ? -1 : 1) : Number(m[1]);
+  return { k: k, v: v };
+}
+
+function combineSide(terms) {
+  const s = S();
+  const byVar = {};
+  let c = 0;
+  terms.forEach(t => {
+    if (t.v) byVar[t.v] = (byVar[t.v] || 0) + t.k;
+    else c += t.k;
+  });
+  const out = [];
+  [s.v1, s.v2].forEach(v => { if (byVar[v]) out.push({ k: byVar[v], v: v }); });
+  if (c !== 0 || out.length === 0) out.push({ k: c, v: null });
+  return out;
+}
+function sameSide(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((t, i) => t.k === b[i].k && (t.v || null) === (b[i].v || null) && !t.disp === !b[i].disp);
+}
+
+// one side is a lone variable with coefficient 1, and the variable is absent
+// from the other side — that is what Substitute needs
+function isolation(row) {
+  const pairs = [[row.L, row.R], [row.R, row.L]];
+  for (let i = 0; i < pairs.length; i++) {
+    const a = pairs[i][0], b = pairs[i][1];
+    if (a.length === 1 && a[0].v && a[0].k === 1 && !b.some(t => t.v === a[0].v))
+      return { v: a[0].v, expr: b };
+  }
+  return null;
+}
+function isSolvedRow(row) {
+  const iso = isolation(row);
+  return !!(iso && iso.expr.length === 1 && !iso.expr[0].v && !iso.expr[0].disp);
+}
+function solvedValue(row, v) {
+  const iso = isolation(row);
+  if (iso && iso.v === v && iso.expr.length === 1 && !iso.expr[0].v) return iso.expr[0].k;
+  return null;
+}
+
+function substSide(terms, v, expr) {
+  const out = [];
+  terms.forEach(t => {
+    if (t.v !== v) { out.push({ k: t.k, v: t.v, disp: t.disp }); return; }
+    if (expr.length === 1 && !expr[0].v) {
+      const n = expr[0].k;
+      const shown = n < 0 ? '(' + num(n) + ')' : String(n);
+      const mag = Math.abs(t.k) === 1 ? shown : String(Math.abs(t.k)) + '(' + (n < 0 ? num(n) : n) + ')';
+      out.push({ k: t.k * n, v: null, disp: mag });
+    } else {
+      expr.forEach(e => out.push({ k: t.k * e.k, v: e.v }));
+    }
+  });
+  return out;
+}
+
+function push(rows, changed, via) { tf().hist.push({ rows: rows, via: via, changed: changed }); }
+
+// returns an error string, or '' when the action was applied
+function applyAction(id, operand) {
+  const T = tf();
+  const label = T.row;
+  const rows = cloneRows(curRows());
+  const row = rows[label];
+
+  if (id === 'add' || id === 'subtract') {
+    const op = parseOperand(operand);
+    if (!op) return 'Pick something to ' + id + '.';
+    const t = { k: id === 'add' ? op.k : -op.k, v: op.v };
+    row.L = combineSide(row.L.concat([{ k: t.k, v: t.v }]));
+    row.R = combineSide(row.R.concat([{ k: t.k, v: t.v }]));
+    push(rows, label, (id === 'add' ? 'add ' : 'subtract ') + opText(operand) +
+      (id === 'add' ? ' to ' : ' from ') + label);
+    return '';
+  }
+
+  if (id === 'multiply' || id === 'divide') {
+    const op = parseOperand(operand);
+    if (!op) return 'Pick a number.';
+    if (op.v) return 'You can only ' + id + ' by a number here — ' + opText(operand) +
+      ' is a variable, and that would not keep the equation linear.';
+    const n = op.k;
+    if (id === 'divide' && n === 0) return 'Dividing by zero is not allowed.';
+    if (n === 1) return (id === 'multiply' ? 'Multiplying' : 'Dividing') + ' by 1 changes nothing.';
+    const f = id === 'multiply' ? n : 1 / n;
+    const scaled = side => side.map(t => ({ k: t.k * f, v: t.v }));
+    const L = scaled(row.L), R = scaled(row.R);
+    if (L.concat(R).some(t => !Number.isInteger(t.k)))
+      return 'That would leave fractions — try a number that divides every term.';
+    row.L = combineSide(L); row.R = combineSide(R);
+    push(rows, label, (id === 'multiply' ? 'multiply ' : 'divide ') + label + ' by ' + num(n));
+    return '';
+  }
+
+  if (id === 'combine') {
+    const L = combineSide(row.L), R = combineSide(row.R);
+    if (sameSide(L, row.L) && sameSide(R, row.R))
+      return 'Nothing to combine in ' + label + ' — the like terms are already gathered.';
+    row.L = L; row.R = R;
+    push(rows, label, 'combine terms in ' + label);
+    return '';
+  }
+
+  if (id === 'replace') {
+    const o = rows[other(label)];
+    row.L = row.L.concat(cloneSide(o.L));
+    row.R = row.R.concat(cloneSide(o.R));
+    push(rows, label, 'replace ' + label + ' with A+B');
+    return '';
+  }
+
+  if (id === 'substitute') {
+    const src = other(label);
+    const iso = isolation(curRows()[src]);
+    if (!iso) return 'Substitute needs equation ' + src + ' to have a single variable on its own, ' +
+      'like ' + S().v1 + ' = … . Isolate one first.';
+    if (!row.L.concat(row.R).some(t => t.v === iso.v))
+      return 'Equation ' + label + ' has no ' + iso.v + ' left to substitute for.';
+    row.L = substSide(row.L, iso.v, iso.expr);
+    row.R = substSide(row.R, iso.v, iso.expr);
+    push(rows, label, 'substitute ' + src + ' into ' + label);
+    return '';
+  }
+  return 'Nothing to do here.';
+}
+
+function opText(operand) {
+  const op = parseOperand(operand);
+  if (!op) return String(operand);
+  if (!op.v) return num(op.k);
+  return (Math.abs(op.k) === 1 ? (op.k < 0 ? '−' : '') : num(op.k)) + op.v;
+}
+
+function undoStep() { const T = tf(); if (T.hist.length > 1) T.hist.pop(); }
+
+// ---- equation to LaTeX
+function sideTex(terms) {
+  let out = '';
+  terms.forEach(t => {
+    let mag;
+    if (t.disp) mag = t.disp;
+    else if (t.v) mag = (Math.abs(t.k) === 1 ? '' : String(Math.abs(t.k))) + t.v;
+    else mag = String(Math.abs(t.k));
+    if (out === '') out = (t.k < 0 && !t.disp ? '-' : (t.k < 0 ? '-' : '')) + mag;
+    else out += (t.k < 0 ? ' - ' : ' + ') + mag;
+  });
+  return out === '' ? '0' : out;
+}
+function rowTex(row) { return sideTex(row.L) + ' = ' + sideTex(row.R); }
+
+// ---------------------------------------------------------------- blanks
+const ORDER = ['a1', 'b1', 'a2', 'b2', 'sx', 'sy', 'i1', 'i2', 'i3', 'i4', 'i5'];
+function blankOrder() { return ORDER; }
+function filled(b) { return state.picks[b] !== undefined && state.picks[b] !== null; }
+function activeBlank() { return ORDER.find(b => !filled(b)) || null; }
+function stage1Done() { return ['a1', 'b1', 'a2', 'b2'].every(filled); }
+function stage2Done() { return stage1Done() && filled('sx') && filled('sy'); }
+function allDone() { return ORDER.every(filled); }
+
+function optionsFor(b) {
+  const s = S();
+  if (['a1', 'b1', 'a2', 'b2'].includes(b)) return s.setupBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'sx') return s.xBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'sy') return s.yBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'i1' || b === 'i4' || b === 'i5')
+    return [{ id: 'A', text: s.A.name }, { id: 'B', text: s.B.name }];
+  if (b === 'i2') return s.costBank.map(n => ({ id: n, text: '$' + n }));
+  if (b === 'i3') return s.amountBank.map(n => ({ id: n, text: s.amountText(n) }));
+  return [];
+}
+function textFor(b, id) {
+  const o = optionsFor(b).find(o => String(o.id) === String(id));
+  return o ? o.text : '';
+}
+
+function isRight(b) {
+  const s = S(), p = state.picks;
+  if (b === 'a1') return p.a1 === s.A.rate;
+  if (b === 'b1') return p.b1 === s.A.fee;
+  if (b === 'a2') return p.a2 === s.B.rate;
+  if (b === 'b2') return p.b2 === s.B.fee;
+  if (b === 'sx') return p.sx === s.xAns;
+  if (b === 'sy') return p.sy === s.yAns;
+  if (b === 'i1') return p.i1 === 'B';
+  if (b === 'i2') return p.i2 === s.yAns;
+  if (b === 'i3') return p.i3 === s.xAns;
+  if (b === 'i4') return p.i4 === 'B';   // smaller per-unit rate wins over the long run
+  if (b === 'i5') return p.i5 === 'A';
+  return false;
+}
+
+// ---------------------------------------------------------------- rendering
+function slotHTML(b, wide) {
+  let cls = 'slot ' + (filled(b) ? 'filled' : 'empty');
+  if (!filled(b) && activeBlank() === b) cls += ' active';
+  if (state.checked && filled(b)) cls += isRight(b) ? ' right' : ' wrong';
+  const label = filled(b) ? textFor(b, state.picks[b]) : '&nbsp;';
+  return '<span class="' + cls + '" data-blank="' + b + '"' +
+         (wide ? ' style="min-width:' + wide + 'px"' : '') + '>' + label + '</span>';
+}
+function frag(key, html) {
+  const isNew = !seen.has(key);
+  seen.add(key);
+  return '<span class="frag' + (isNew ? ' reveal' : '') + '">' + html + '</span>';
+}
+function stageCard(key, n, title, inner) {
+  const isNew = !seen.has('stage-' + key);
+  seen.add('stage-' + key);
+  return '<div class="stage' + (isNew ? ' reveal' : '') + '" style="margin-bottom:10px">' +
+    '<div class="stage-head"><span class="n">' + n + '</span>' + title + '</div>' + inner + '</div>';
+}
+
+function renderDatasetButtons() {
+  const host = document.getElementById('dataset-buttons');
+  host.innerHTML = '';
+  Object.entries(SCENARIOS).forEach(([key, s]) => {
+    const b = document.createElement('button');
+    b.className = 'dataset-btn' + (key === state.key ? ' active' : '');
+    b.innerHTML = s.name + '<span class="sub">' + s.sub + '</span>';
+    b.onclick = () => { state.key = key; resetPicks(); renderAll(); };
+    host.appendChild(b);
+  });
+}
+
+function renderStages() {
+  const s = S(), p = state.picks;
+  let html = '';
+
+  // ---- stage 1: set up
+  let s1 = '';
+  [[s.A.name, 'a1', 'b1'], [s.B.name, 'a2', 'b2']].forEach(([nm, ka, kb]) => {
+    s1 += '<div class="eq"><span class="co">' + nm + '</span>' +
+      K(s.v1 + ' =') + slotHTML(ka) + K(s.v2 + ' \\; +') + slotHTML(kb) + '</div>';
+  });
+  if (stage1Done()) {
+    s1 += frag('sys', '<div class="derived">Two equations, two unknowns — solve the system.</div>');
+  }
+  html += stageCard('setup', 1, 'Set up the two costs', s1);
+
+  // ---- stage 2: solve, with a transformer workspace as the working-out
+  if (stage1Done()) {
+    let s2 = workspaceHTML();
+    s2 += '<div class="final-label">Final answer</div>';
+    s2 += '<div class="eq">' + K(s.v2 + ' =') + slotHTML('sx') +
+          '<span style="display:inline-block;width:12px"></span>' +
+          K(s.v1 + ' =') + slotHTML('sy') + '</div>';
+    html += stageCard('solve', 2, 'Solve the system', s2);
+  }
+
+  // ---- stage 3: interpret
+  if (stage2Done()) {
+    let s3 = '';
+    let l1 = s.A.name + ' and ' + slotHTML('i1', 108);
+    if (filled('i1')) l1 += frag('i2', ' both cost ' + slotHTML('i2', 58));
+    if (filled('i2')) l1 += frag('i3', ' ' + s.joiner + ' ' + slotHTML('i3', 76));
+    if (filled('i3')) l1 += frag('i3dot', '.');
+    s3 += '<div class="line">' + l1 + '</div>';
+
+    if (filled('i3')) {
+      let l2 = 'For ' + s.longer + ', ' + slotHTML('i4', 108);
+      if (filled('i4')) l2 += frag('i5', ' ' + s.verb + ' cheaper, while for ' + s.shorter + ', ' +
+        slotHTML('i5', 108));
+      if (filled('i5')) l2 += frag('i5dot', ' ' + s.verb + ' cheaper.');
+      s3 += frag('line2', '<div class="line">' + l2 + '</div>');
+    }
+    if (filled('i5')) s3 += frag('plot', '<div class="plot">' + plotSVG() + '</div>');
+    html += stageCard('interpret', 3, 'Interpret the crossing', s3);
+  }
+
+  document.getElementById('stages').innerHTML = html;
+  document.querySelectorAll('.slot').forEach(el => { el.onclick = () => onSlotClick(el.dataset.blank); });
+  wireWorkspace();
+}
+
+// ---- the transformer workspace: step rows, action pills, undo
+function workspaceHTML() {
+  const T = tf(), h = T.hist;
+  let w = '<div class="workspace">';
+
+  w += '<div class="log-head">Working</div><div class="log">';
+  ['A', 'B'].forEach(r => {
+    w += '<div class="eqrow"><span class="rowlab">' + r + '</span>' + K(rowTex(h[0].rows[r])) + '</div>';
+  });
+  for (let i = 1; i < h.length; i++) {
+    w += '<div class="via">' + h[i].via + '</div>';
+    const r = h[i].changed;
+    w += '<div class="eqrow"><span class="rowlab">' + r + '</span>' + K(rowTex(h[i].rows[r])) + '</div>';
+  }
+  w += '</div><div class="ws-sep"></div>';
+
+  const rows = curRows();
+  w += '<div class="cases stack">';
+  ['A', 'B'].forEach(r => {
+    w += '<div class="case' + (T.row === r ? ' active' : '') + '" data-row="' + r + '">' +
+      '<div class="eqrow current"><span class="rowlab">' + r + '</span>' + K(rowTex(rows[r])) + '</div>' +
+      (isSolvedRow(rows[r]) ? '<div class="case-done">solved</div>' : '') +
+      '</div>';
+  });
+  w += '</div>';
+  w += '<div class="case-hint">Tap an equation to make it active, then tap an action</div>';
+  w += '</div>';
+
+  if (T.pending) {
+    const act = ACTIONS.find(a => a.id === T.pending);
+    w += '<div class="operand-bar"><span class="operand-label">' + act.label + '</span>' +
+      S().operandBank.map(o =>
+        '<button class="pill operand" data-operand="' + o + '">' + opText(o) + '</button>').join('') +
+      '<button class="pill cancel" data-cancel="1">&times;</button></div>';
+  } else {
+    w += '<div class="actions-bank">' +
+      ACTIONS.map(a => '<button class="pill" data-action="' + a.id + '">' + a.label + '</button>').join('') +
+      '<button class="pill undo" data-undo="1">&#8630; Undo</button></div>';
+  }
+  if (T.message) w += '<div class="tf-message">' + T.message + '</div>';
+  return w;
+}
+
+function wireWorkspace() {
+  const T = tf();
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.onclick = () => {
+      const a = ACTIONS.find(x => x.id === el.dataset.action);
+      T.message = '';
+      if (a.operand) T.pending = a.id;
+      else T.message = applyAction(a.id, null);
+      renderAll();
+    };
+  });
+  document.querySelectorAll('[data-operand]').forEach(el => {
+    el.onclick = () => { T.message = applyAction(T.pending, el.dataset.operand); T.pending = null; renderAll(); };
+  });
+  const cancel = document.querySelector('[data-cancel]');
+  if (cancel) cancel.onclick = () => { T.pending = null; renderAll(); };
+  const undo = document.querySelector('[data-undo]');
+  if (undo) undo.onclick = () => { undoStep(); T.message = ''; renderAll(); };
+  document.querySelectorAll('[data-row]').forEach(el => {
+    el.onclick = () => { T.row = el.dataset.row; T.message = ''; renderAll(); };
+  });
+}
+
+// the two cost lines, the crossing, and the region each provider owns
+function plotSVG() {
+  const s = S(), pl = s.plot;
+  const W = 320, H = 200, ml = 34, mr = 12, mt = 16, mb = 30;
+  const X = x => ml + x / pl.xMax * (W - ml - mr);
+  const Y = y => mt + (pl.yMax - y) / pl.yMax * (H - mt - mb);
+  const fA = x => s.A.rate * x + s.A.fee;
+  const fB = x => s.B.rate * x + s.B.fee;
+  const cA = '#2f7de1', cB = '#e0731a';
+  const xi = s.xAns, yi = s.yAns;
+
+  const line = (f, col) => '<line x1="' + X(0).toFixed(1) + '" y1="' + Y(f(0)).toFixed(1) +
+    '" x2="' + X(pl.xMax).toFixed(1) + '" y2="' + Y(f(pl.xMax)).toFixed(1) +
+    '" stroke="' + col + '" stroke-width="2.2"/>';
+
+  const halo = (x, y, anchor, col, txt) =>
+    '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" font-size="9.5" ' +
+    'paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" fill="' + col + '">' +
+    txt + '</text>';
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '">' +
+    // the region each provider owns
+    '<rect x="' + X(0) + '" y="' + mt + '" width="' + (X(xi) - X(0)) + '" height="' + (H - mt - mb) +
+      '" fill="#eaf2fd"/>' +
+    '<rect x="' + X(xi) + '" y="' + mt + '" width="' + (X(pl.xMax) - X(xi)) + '" height="' + (H - mt - mb) +
+      '" fill="#fdf1e7"/>' +
+    halo(((X(0) + X(xi)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#2f7de1',
+      s.A.name + ' cheaper') +
+    halo(((X(xi) + X(pl.xMax)) / 2).toFixed(1), (H - mb - 6).toFixed(1), 'middle', '#c2610f',
+      s.B.name + ' cheaper') +
+    // axes
+    '<line x1="' + ml + '" y1="' + Y(0) + '" x2="' + (W - mr) + '" y2="' + Y(0) +
+      '" stroke="#c9c9d2" stroke-width="1"/>' +
+    '<line x1="' + X(0) + '" y1="' + mt + '" x2="' + X(0) + '" y2="' + (H - mb) +
+      '" stroke="#c9c9d2" stroke-width="1"/>' +
+    // guides to the crossing
+    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(xi) + '" y2="' + Y(0) +
+      '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>' +
+    '<line x1="' + X(xi) + '" y1="' + Y(yi) + '" x2="' + X(0) + '" y2="' + Y(yi) +
+      '" stroke="#9a9aa4" stroke-width="1" stroke-dasharray="4 4"/>' +
+    line(fA, cA) + line(fB, cB) +
+    // legend, tucked into the empty top-left of the plot
+    '<line x1="' + (ml + 7) + '" y1="' + (mt + 9) + '" x2="' + (ml + 21) + '" y2="' + (mt + 9) +
+      '" stroke="' + cA + '" stroke-width="2.6"/>' +
+    halo((ml + 25).toFixed(1), (mt + 12).toFixed(1), 'start', cA, s.A.name) +
+    '<line x1="' + (ml + 7) + '" y1="' + (mt + 24) + '" x2="' + (ml + 21) + '" y2="' + (mt + 24) +
+      '" stroke="' + cB + '" stroke-width="2.6"/>' +
+    halo((ml + 25).toFixed(1), (mt + 27).toFixed(1), 'start', cB, s.B.name) +
+    // the crossing
+    '<circle cx="' + X(xi) + '" cy="' + Y(yi) + '" r="5" fill="#2ecc40" stroke="#1e9e31" stroke-width="2"/>' +
+    halo((X(xi) + 8).toFixed(1), (Y(yi) - 13).toFixed(1), 'start', '#17853a',
+      '(' + xi + ', ' + yi + ')') +
+    // axis ticks at the crossing
+    halo((X(xi)).toFixed(1), (Y(0) + 12).toFixed(1), 'middle', '#6a6a74', String(xi)) +
+    halo((ml - 3).toFixed(1), (Y(yi) + 3).toFixed(1), 'end', '#6a6a74', '$' + yi) +
+    '<text x="' + (W - mr) + '" y="' + (H - 6) + '" text-anchor="end" font-size="9.5" fill="#8a8a94">' +
+      pl.xLabel + '</text>' +
+    '<text x="2" y="' + (mt - 5) + '" font-size="9.5" fill="#8a8a94">' + pl.yLabel + '</text>' +
+    '</svg>';
+}
+
+function renderBank() {
+  const b = activeBlank();
+  const s = S();
+  const bank = document.getElementById('bank');
+  const caption = document.getElementById('bank-caption');
+  bank.innerHTML = '';
+  if (!b) { caption.textContent = 'Tap any boxed answer to change it'; return; }
+  caption.textContent =
+    ['a1', 'b1', 'a2', 'b2'].includes(b) ? 'Build both equations' :
+    b === 'sx' ? s.xPrompt :
+    b === 'sy' ? 'Solve for the cost' :
+    b === 'i2' ? 'How much?' :
+    b === 'i3' ? s.amountPrompt : 'Which company?';
+  optionsFor(b).forEach(o => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.textContent = o.text;
+    t.onclick = () => { state.picks[b] = o.id; state.checked = false; renderAll(); };
+    bank.appendChild(t);
+  });
+}
+
+function renderFooter() {
+  const btn = document.getElementById('check');
+  const fb = document.getElementById('feedback');
+  const done = allDone();
+
+  document.getElementById('progress').style.width =
+    Math.round(ORDER.filter(filled).length / ORDER.length * 100) + '%';
+
+  btn.className = 'check-btn' + (done ? ' ready' : '');
+  btn.textContent = 'Check';
+  fb.textContent = ''; fb.className = 'feedback';
+
+  if (state.checked) {
+    const ok = ORDER.every(isRight);
+    btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
+    btn.textContent = ok ? 'Correct' : 'Try again';
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    fb.textContent = ok
+      ? 'Modelled, solved and interpreted — the whole argument holds.'
+      : 'Something in the chain does not hold. Tap a red box to rethink it.';
+  }
+}
+
+function renderContext() {
+  const s = S();
+  document.getElementById('context-text').textContent = s.context;
+  document.getElementById('model-line').innerHTML = 'Let ' + s.legend;
+}
+
+function renderAll() {
+  renderDatasetButtons();
+  renderContext();
+  renderStages();
+  renderBank();
+  renderFooter();
+}
+
+// ---------------------------------------------------------------- interaction
+function onSlotClick(b) {
+  const i = ORDER.indexOf(b);
+  if (i === -1) return;
+  ORDER.slice(i).forEach(k => { delete state.picks[k]; });
+  const keep = new Set(['stage-setup']);
+  if (i > 3) keep.add('sys').add('stage-solve');
+  seen = keep;
+  if (i <= ORDER.indexOf('b2')) state.tf = null;   // remodelling invalidates the working-out
+  state.checked = false;
+  renderAll();
+}
+
+function resetPicks() { state.picks = {}; state.checked = false; state.tf = null; seen = new Set(); }
+
+(function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('s') && SCENARIOS[q.get('s')]) state.key = q.get('s');
+  const raw = q.get('picks');
+  if (raw) {
+    raw.split(',').forEach(pair => {
+      const [k, v] = pair.split(':');
+      if (!k) return;
+      state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+    });
+  }
+  // replay working-out, e.g.
+  // steps=row:B,substitute,subtract:d,subtract:3,row:A,substitute,combine
+  const steps = q.get('steps');
+  if (steps) {
+    steps.split(',').forEach(st => {
+      const [id, arg] = st.split(':');
+      if (id === 'row') { tf().row = arg; return; }
+      const msg = applyAction(id, arg === undefined ? null : arg);
+      if (msg) tf().message = msg;
+    });
+  }
+  if (q.get('checked') === '1') state.checked = true;
+  seen = new Set();
+})();
+
+document.getElementById('check').onclick = () => { if (allDone()) { state.checked = true; renderAll(); } };
+document.getElementById('reset').onclick = () => { resetPicks(); renderAll(); };
+
+renderAll();
+</script>
+
+</body>
+</html>
