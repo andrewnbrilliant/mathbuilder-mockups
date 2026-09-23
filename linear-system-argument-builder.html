@@ -566,7 +566,7 @@ function sideTex(terms) {
 function rowTex(row) { return sideTex(row.L) + ' = ' + sideTex(row.R); }
 
 // ---------------------------------------------------------------- blanks
-const ORDER = ['a1', 'b1', 'a2', 'b2', 'sx', 'sy', 'i1', 'i2', 'i3', 'i4', 'i5'];
+const ORDER = ['a1', 'b1', 'a2', 'b2', 'sx', 'sy', 'i2', 'i3', 'i4', 'i5'];
 function blankOrder() { return ORDER; }
 function filled(b) { return state.picks[b] !== undefined && state.picks[b] !== null; }
 function activeBlank() { return ORDER.find(b => !filled(b)) || null; }
@@ -579,7 +579,7 @@ function optionsFor(b) {
   if (['a1', 'b1', 'a2', 'b2'].includes(b)) return s.setupBank.map(n => ({ id: n, text: num(n) }));
   if (b === 'sx') return s.xBank.map(n => ({ id: n, text: num(n) }));
   if (b === 'sy') return s.yBank.map(n => ({ id: n, text: num(n) }));
-  if (b === 'i1' || b === 'i4' || b === 'i5')
+  if (b === 'i4' || b === 'i5')
     return [{ id: 'A', text: s.A.name }, { id: 'B', text: s.B.name }];
   if (b === 'i2') return s.costBank.map(n => ({ id: n, text: '$' + n }));
   if (b === 'i3') return s.amountBank.map(n => ({ id: n, text: s.amountText(n) }));
@@ -598,7 +598,6 @@ function isRight(b) {
   if (b === 'b2') return p.b2 === s.B.fee;
   if (b === 'sx') return p.sx === s.xAns;
   if (b === 'sy') return p.sy === s.yAns;
-  if (b === 'i1') return p.i1 === 'B';
   if (b === 'i2') return p.i2 === s.yAns;
   if (b === 'i3') return p.i3 === s.xAns;
   if (b === 'i4') return p.i4 === 'B';   // smaller per-unit rate wins over the long run
@@ -667,17 +666,15 @@ function renderStages() {
   // ---- stage 3: interpret
   if (stage2Done()) {
     let s3 = '';
-    let l1 = s.A.name + ' and ' + slotHTML('i1', 108);
-    if (filled('i1')) l1 += frag('i2', ' both cost ' + slotHTML('i2', 58));
+    let l1 = s.A.name + ' and ' + s.B.name + ' both cost ' + slotHTML('i2', 58);
     if (filled('i2')) l1 += frag('i3', ' ' + s.joiner + ' ' + slotHTML('i3', 76));
     if (filled('i3')) l1 += frag('i3dot', '.');
     s3 += '<div class="line">' + l1 + '</div>';
 
     if (filled('i3')) {
-      let l2 = 'For ' + s.longer + ', ' + slotHTML('i4', 108);
-      if (filled('i4')) l2 += frag('i5', ' ' + s.verb + ' cheaper, while for ' + s.shorter + ', ' +
-        slotHTML('i5', 108));
-      if (filled('i5')) l2 += frag('i5dot', ' ' + s.verb + ' cheaper.');
+      let l2 = 'For ' + s.longer + ', ' + slotHTML('i4', 108) + ' ' + s.verb + ' cheaper,';
+      if (filled('i4')) l2 += frag('i5', ' while for ' + s.shorter + ', ' +
+        slotHTML('i5', 108) + ' ' + s.verb + ' cheaper.');
       s3 += frag('line2', '<div class="line">' + l2 + '</div>');
     }
     if (filled('i5')) s3 += frag('plot', '<div class="plot">' + plotSVG() + '</div>');
