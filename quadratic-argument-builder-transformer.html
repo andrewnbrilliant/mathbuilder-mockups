@@ -153,6 +153,18 @@
     color: #9a9aa4; font-weight: 600; margin-top: 10px; text-align: center;
   }
 
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 30px; padding: 2px 11px; margin: 0 3px;
+    border: 1.5px dashed #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #8a8a94; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s;
+  }
+  .toggle:hover { border-color: #9aa0b0; }
+  .toggle.on { border-style: solid; border-color: #1a1a1a; background: #f2f2f5; color: #1a1a1a; font-weight: 500; }
+  .toggle.right { border-color: #2ecc40; background: #eafbea; color: #1a1a1a; }
+  .toggle.wrong { border-color: #e74c3c; background: #fdeeec; color: #1a1a1a; }
+
   .plot { margin-top: 2px; }
   .plot svg { width: 100%; display: block; }
 
@@ -211,7 +223,8 @@
     <p><strong>2 Count</strong> — the discriminant, then how many real solutions it implies.</p>
     <p><strong>3 Solve</strong> — a QuadraticEquationTransformer-style workspace to do the algebra in,
       then as many final-answer blanks as they just claimed there are.</p>
-    <p><strong>4 Interpret</strong> — throw away what the situation forbids, and answer in words.</p>
+    <p><strong>4 Interpret</strong> — decide which solutions the situation allows, and answer in
+      words.</p>
   </div>
 </div>
 
@@ -251,7 +264,7 @@
       <strong>2.</strong> <code>b² − 4ac = ?</code>, so the equation has <code>?</code> real solutions
       <div class="branch">
         <span class="tag two">two</span> → solve for <code>t = ?</code> or <code>t = ?</code><br>
-        <strong>4.</strong> Time cannot be negative, so we reject <code>?</code> and conclude <code>?</code>
+        <strong>4.</strong> The solutions that make sense here are <code>?</code>, so <code>?</code>
       </div>
       <div class="branch">
         <span class="tag one">one</span> → solve for <code>t = ?</code><br>
@@ -269,10 +282,14 @@
     <p>The <strong>count blank rewrites the rest of the question</strong> — claim one solution and only
       one root blank ever appears. Wrong counts still produce a complete, coherent argument that fails
       on Check, rather than a dead end.</p>
-    <p>The <strong>rejection step only exists on the two-solution branch</strong>, which is where it is
-      the actual mathematical work. Nothing is asked twice.</p>
+    <p>The <strong>keep-or-drop step only exists on the two-solution branch</strong>, which is where it
+      is the actual mathematical work. Nothing is asked twice.</p>
+    <p><strong>Nothing hints at why a solution might not belong.</strong> Both times are offered as
+      toggles and either, both or one can be kept &mdash; the learner has to notice that a negative
+      time is before the throw, rather than being told so in the sentence they are completing.</p>
     <p>The <strong>graph appears only at stage 4</strong>. Shown earlier it would give away the count;
-      shown at the end it ties the rejected root to the shaded "before the throw" region.</p>
+      shown at the end it ties the dropped root to the shaded "before the throw" region &mdash; and it
+      marks whichever roots the learner actually kept, so it never pre-empts the decision.</p>
     <p>Equation blanks are all visible at once — an expression reads better whole — while sentence
       blanks still arrive one at a time.</p>
   </div>
@@ -541,15 +558,17 @@ function num(n) { return n < 0 ? '−' + Math.abs(n) : String(n); }
 function blankOrder() {
   const o = ['a', 'b', 'c', 'target', 'disc', 'count'];
   const n = state.picks.count;
-  if (n === 'two')  o.push('r1', 'r2', 'reject', 'concl');
+  if (n === 'two')  o.push('r1', 'r2', 'accept', 'concl');
   if (n === 'one')  o.push('r1', 'concl');
   if (n === 'none') o.push('concl');
   return o;
 }
-function activeBlank() {
-  return blankOrder().find(b => state.picks[b] === undefined || state.picks[b] === null) || null;
+function activeBlank() { return blankOrder().find(b => !filled(b)) || null; }
+function filled(b) {
+  const v = state.picks[b];
+  if (Array.isArray(v)) return v.length > 0;   // accept is a multi-select
+  return v !== undefined && v !== null;
 }
-function filled(b) { return state.picks[b] !== undefined && state.picks[b] !== null; }
 function stage1Done() { return ['a','b','c','target'].every(filled); }
 function stage2Done() { return stage1Done() && filled('disc') && filled('count'); }
 function stage3Needed() { return state.picks.count === 'two' || state.picks.count === 'one'; }
@@ -570,10 +589,6 @@ function optionsFor(b) {
   if (b === 'count') return COUNTS;
   if (b === 'r1' || b === 'r2')
     return s.rootBank.map(n => ({ id: n, text: num(n) }));
-  if (b === 'reject')
-    return [state.picks.r1, state.picks.r2]
-      .filter(v => v !== undefined && v !== null)
-      .map(v => ({ id: v, text: 't = ' + num(v) }));
   if (b === 'concl') return s.conclusions;
   return [];
 }
@@ -597,7 +612,12 @@ function isRight(b) {
     const want = s.roots.slice().sort((x, y) => x - y);
     return picks.length === want.length && picks.every((v, i) => v === want[i]);
   }
-  if (b === 'reject') return typeof p.reject === 'number' && p.reject < 0;
+  if (b === 'accept') {
+    const offered = [p.r1, p.r2].filter(v => typeof v === 'number');
+    const want = offered.filter(v => v >= 0).slice().sort((x, y) => x - y);
+    const got = (p.accept || []).slice().sort((x, y) => x - y);
+    return got.length === want.length && got.every((v, i) => v === want[i]);
+  }
   if (b === 'concl')  return p.concl === s.conclusion;
   return false;
 }
@@ -612,6 +632,23 @@ function slotHTML(b, wide) {
   return '<span class="' + cls + '" data-blank="' + b + '"' +
          (wide ? ' style="min-width:' + wide + 'px"' : '') + '>' + label + '</span>';
 }
+// the learner picks which of their own solutions to keep — either, both or one.
+// Nothing here says why one of them might not belong.
+function acceptTogglesHTML() {
+  const p = state.picks;
+  const chosen = p.accept || [];
+  const offered = [p.r1, p.r2].filter(v => typeof v === 'number');
+  return offered.map(v => {
+    const on = chosen.includes(v);
+    let cls = 'toggle' + (on ? ' on' : '');
+    if (state.checked && filled('accept')) {
+      const shouldBeOn = v >= 0;
+      if (on !== shouldBeOn) cls += ' wrong'; else if (on) cls += ' right';
+    }
+    return '<span class="' + cls + '" data-accept="' + v + '">t = ' + num(v) + '</span>';
+  }).join('');
+}
+
 function frag(key, html) {
   const isNew = !seen.has(key);
   seen.add(key);
@@ -685,10 +722,10 @@ function renderStages() {
     let s4 = '';
     if (p.count === 'two') {
       s4 += frag('int-two-a',
-        '<div class="line">Time cannot be negative, so we reject ' + slotHTML('reject', 70) + '</div>');
-      if (filled('reject')) {
+        '<div class="line">The solutions that make sense here are ' + acceptTogglesHTML() + '</div>');
+      if (filled('accept')) {
         s4 += frag('int-two-b',
-          '<div class="line">and conclude that ' + slotHTML('concl', 150) + '</div>');
+          '<div class="line">so ' + slotHTML('concl', 150) + '</div>');
       }
     } else if (p.count === 'one') {
       s4 += frag('int-one', '<div class="line">A repeated solution means ' + slotHTML('concl', 150) + '</div>');
@@ -702,6 +739,15 @@ function renderStages() {
   document.getElementById('stages').innerHTML = html;
   document.querySelectorAll('.slot').forEach(el => {
     el.onclick = () => onSlotClick(el.dataset.blank);
+  });
+  document.querySelectorAll('[data-accept]').forEach(el => {
+    el.onclick = () => {
+      const v = Number(el.dataset.accept);
+      const cur = state.picks.accept || [];
+      state.picks.accept = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
+      state.checked = false;
+      renderAll();
+    };
   });
   wireWorkspace();
 }
@@ -793,8 +839,12 @@ function plotSVG() {
               : state.picks.count === 'one' ? [state.picks.r1] : [])
               .filter(v => typeof v === 'number');
 
+  const accepted = state.picks.accept || [];
   const marks = roots.map(t => {
-    const keep = t >= 0;
+    // before Check the graph mirrors the learner's choice; after Check it tells the truth
+    const keep = state.picks.count !== 'two' ? true
+               : state.checked ? t >= 0
+               : accepted.includes(t);
     return '<circle cx="' + X(t).toFixed(1) + '" cy="' + Y(s.target).toFixed(1) + '" r="5" ' +
       'fill="' + (keep ? '#2ecc40' : '#fff') + '" stroke="' + (keep ? '#1e9e31' : '#e74c3c') +
       '" stroke-width="2"/>' +
@@ -844,7 +894,7 @@ function renderBank() {
     ['a','b','c','target'].includes(b) ? 'Build the equation' :
     b === 'disc'   ? 'Evaluate the discriminant' :
     b === 'count'  ? 'How many real solutions?' :
-    b === 'reject' ? 'Which time is impossible?' :
+    b === 'accept' ? 'Tap the solutions you want to keep' :
     b === 'concl'  ? 'Say what it means' : 'Solve for t';
   optionsFor(b).forEach(o => {
     const t = document.createElement('button');
@@ -919,7 +969,8 @@ function resetPicks() { state.picks = {}; state.checked = false; state.tf = null
     raw.split(',').forEach(pair => {
       const [k, v] = pair.split(':');
       if (!k) return;
-      state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+      if (k === 'accept') state.picks[k] = v.split('|').map(Number);
+      else state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
     });
   }
   // replay working-out, e.g. steps=divide:-5,factor,split,subtract:1,side:right,add:4
