@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branching Argument Builder — Choose the Model</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e8e8e8;
+    display: flex; justify-content: center; align-items: flex-start; gap: 24px;
+    padding: 24px 20px 60px; min-height: 100vh;
+  }
+
+  .rail { width: 300px; display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #8a8a94; font-weight: 600; margin-bottom: 10px;
+  }
+  .card p { font-size: 13px; line-height: 1.5; color: #444; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .dataset-btn {
+    display: block; width: 100%; text-align: left;
+    padding: 9px 12px; margin-bottom: 6px;
+    border: 1.5px solid #e2e2e8; border-radius: 9px; background: #fff;
+    font-size: 13px; font-weight: 500; color: #333; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .dataset-btn:hover { border-color: #c9c9d2; background: #fafafb; }
+  .dataset-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  .dataset-btn .sub { display: block; font-size: 11px; font-weight: 400; opacity: 0.65; margin-top: 2px; }
+  .dataset-btn:last-child { margin-bottom: 0; }
+
+  .tree { font-size: 12.5px; line-height: 1.7; color: #444; }
+  .tree code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px; background: #f2f2f5; padding: 1px 4px; border-radius: 4px;
+  }
+  .tree .branch { padding-left: 14px; border-left: 2px solid #e6e6ec; margin: 4px 0 4px 4px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #fff; }
+  .tag.lin { background: #2f7de1; }
+  .tag.quad { background: #0f8a6a; }
+  .tag.expo { background: #b5379a; }
+
+  /* ---------- phone ---------- */
+  .phone {
+    width: 375px; min-height: 812px;
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex; flex-direction: column; position: relative; flex: none;
+  }
+  .top-bar { display: flex; align-items: center; padding: 14px 18px 10px; gap: 12px; }
+  .close-btn { font-size: 18px; color: #1a1a1a; font-weight: 300; line-height: 1; }
+  .progress-track { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #c5cc3c; border-radius: 3px; transition: width 0.35s ease; }
+  .bolt { font-size: 16px; color: #c5cc3c; }
+
+  .content { flex: 1; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .context-block { background: #f5f5f7; border-radius: 12px; padding: 14px; }
+  .context-text { font-size: 14px; line-height: 1.5; color: #1a1a1a; }
+  .model-line {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #e4e4ea;
+    font-size: 12.5px; color: #6a6a74; display: flex; align-items: center; gap: 6px;
+  }
+
+  .stage {
+    border: 1px solid #e4e4ea; border-radius: 12px; padding: 12px 14px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stage-head {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600;
+  }
+  .stage-head .n {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; background: #e9e9ef;
+    color: #6a6a74; font-size: 10px; margin-right: 6px; vertical-align: 1px;
+  }
+  .line { font-size: 14px; line-height: 2.1; color: #1a1a1a; }
+  .derived { font-size: 14px; color: #1a1a1a; text-align: center; padding: 2px 0; }
+  .eq { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font-size: 15px; }
+  .eq .expo-sup { margin-left: -3px; }
+
+  .reveal { animation: fadeIn 0.33s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .frag { display: inline; }
+  .frag.reveal .slot, .stage.reveal .slot { animation: slotUp 0.33s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes slotUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .slot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 46px; min-height: 30px; padding: 2px 9px; margin: 0 2px;
+    border: 1.5px solid #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s; text-align: center;
+  }
+  .slot.empty { background: #fafafa; }
+  .slot.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.08); background: #fff; }
+  .slot.filled { border-color: #b9b9c4; background: #f2f2f5; }
+  .slot.right { border-color: #2ecc40; background: #eafbea; }
+  .slot.wrong { border-color: #e74c3c; background: #fdeeec; }
+  .slot .katex { font-size: 0.95em; }
+
+  /* ---------- transformer workspace ---------- */
+  .workspace {
+    background: #fafafb; border: 1px solid #ededf2; border-radius: 10px;
+    padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .eqrow { font-size: 15px; color: #8a8a94; padding: 1px 0; }
+  .eqrow.current { color: #1a1a1a; }
+  .via {
+    font-size: 10px; color: #9a9aa4; background: #f0f0f4; border-radius: 10px;
+    padding: 1px 8px; margin: 3px 0; font-variant-numeric: tabular-nums;
+  }
+  .cases { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+  .case {
+    flex: 1; border: 1.5px solid #e4e4ea; border-radius: 9px; padding: 6px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer; background: #fff; transition: all 0.15s;
+  }
+  .case.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.06); }
+  .case .eqrow { font-size: 14px; }
+  .case-done { font-size: 10px; color: #17853a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .case-hint { font-size: 10.5px; color: #a0a0aa; margin-top: 4px; }
+
+  .actions-bank, .operand-bar {
+    display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px;
+  }
+  .operand-bar { align-items: center; }
+  .operand-label { font-size: 12px; color: #6a6a74; margin-right: 2px; }
+  .pill {
+    border: 1.5px solid #d4d7e0; background: #fff; border-radius: 14px;
+    padding: 5px 10px; font-size: 12px; color: #333; cursor: pointer;
+    font-family: inherit; transition: all 0.12s;
+  }
+  .pill:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .pill:active { transform: scale(0.95); background: #ededf2; }
+  .pill.undo { border-color: #ededf2; color: #9a9aa4; }
+  .pill.operand { min-width: 38px; font-variant-numeric: tabular-nums; }
+  .pill.cancel { border-color: #ededf2; color: #9a9aa4; padding: 5px 9px; }
+  .tf-message { font-size: 11.5px; color: #c0392b; text-align: center; margin-top: 6px; line-height: 1.4; }
+  .final-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-top: 10px; text-align: center;
+  }
+
+  .toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 30px; padding: 2px 11px; margin: 0 3px;
+    border: 1.5px dashed #c9c9d2; border-radius: 7px; background: #fff;
+    font-size: 13.5px; color: #8a8a94; cursor: pointer;
+    vertical-align: middle; transition: all 0.18s;
+  }
+  .toggle:hover { border-color: #9aa0b0; }
+  .toggle.on { border-style: solid; border-color: #1a1a1a; background: #f2f2f5; color: #1a1a1a; font-weight: 500; }
+  .toggle.right { border-color: #2ecc40; background: #eafbea; color: #1a1a1a; }
+  .toggle.wrong { border-color: #e74c3c; background: #fdeeec; color: #1a1a1a; }
+
+  .plot { margin-top: 2px; }
+  .plot svg { width: 100%; display: block; }
+
+  .bank-area { background: #f7f8fa; border-top: 1px solid #e8e8e8; padding: 10px 12px 12px; min-height: 92px; }
+  .bank-caption {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9a9aa4; font-weight: 600; margin-bottom: 8px; text-align: center;
+  }
+  .bank { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+  .tile {
+    background: #fff; border: 1.5px solid #d4d7e0; border-radius: 8px;
+    padding: 8px 12px; font-size: 13.5px; color: #1a1a1a; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.12s; font-family: inherit;
+  }
+  .tile:hover { border-color: #9aa0b0; background: #fcfcfd; }
+  .tile:active { transform: scale(0.96); background: #ededf2; }
+
+  .feedback { font-size: 13px; line-height: 1.45; padding: 4px 16px 0; min-height: 18px; color: #666; text-align: center; }
+  .feedback.good { color: #17853a; }
+  .feedback.bad { color: #c0392b; }
+
+  .bottom-bar { padding: 10px 16px 20px; display: flex; gap: 10px; align-items: center; }
+  .check-btn {
+    flex: 1; height: 46px; border-radius: 23px; border: none;
+    background: #f0f0f0; color: #bbb; font-size: 16px; font-weight: 500;
+    cursor: default; transition: all 0.3s; font-family: inherit;
+  }
+  .check-btn.ready { background: #1a1a1a; color: #fff; cursor: pointer; }
+  .check-btn.correct { background: #2ecc40; color: #fff; }
+  .check-btn.incorrect { background: #e74c3c; color: #fff; }
+  .reset-btn {
+    height: 46px; padding: 0 16px; border-radius: 23px;
+    border: 1.5px solid #e0e0e6; background: #fff; color: #666;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #f7f7f9; }
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <div class="card">
+    <h2>Scenario</h2>
+    <div id="dataset-buttons"></div>
+    <p style="margin-top:10px;font-size:12px;color:#8a8a94;">
+      One question shell. The learner <em>chooses the family of model</em> before building anything,
+      and that choice rewrites the template, the solver and the closing sentence.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>The four moves</h2>
+    <p><strong>1 Choose</strong> — linear, quadratic or exponential. Nothing else is on screen yet,
+      so the decision is made from the words of the scenario alone.</p>
+    <p><strong>2 Fill</strong> — the template <em>they picked</em> appears, all blanks at once, then
+      the value of <em>y</em> the question is asking about, then the equation that follows.</p>
+    <p><strong>3 Solve</strong> — a transformer workspace whose pills suit the form they chose, then
+      the final-answer blanks that are actually graded.</p>
+    <p><strong>4 Conclude</strong> — interpret the answer in the scenario's own words, and only then
+      see the graph.</p>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="top-bar">
+    <div class="close-btn">&times;</div>
+    <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+    <div class="bolt">&#9889;</div>
+  </div>
+
+  <div class="content">
+    <div class="context-block">
+      <div class="context-text" id="context-text"></div>
+      <div class="model-line" id="model-line"></div>
+    </div>
+    <div id="stages"></div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="bank-area">
+    <div class="bank-caption" id="bank-caption">Tap to fill the blank</div>
+    <div class="bank" id="bank"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" id="reset">Reset</button>
+    <button class="check-btn" id="check">Check</button>
+  </div>
+</div>
+
+<div class="rail">
+  <div class="card">
+    <h2>Branch map</h2>
+    <div class="tree">
+      <strong>1.</strong> best modelled as <code>?</code>
+      <div class="branch">
+        <span class="tag lin">linear</span> <code>y = ?x + ?</code><br>
+        LinearTransformer &middot; one answer blank<br>
+        <strong>4.</strong> <code>x</code> measures <code>?</code>, so <code>?</code>
+      </div>
+      <div class="branch">
+        <span class="tag quad">quadratic</span> <code>y = ?x² + ?x + ?</code><br>
+        QuadraticTransformer &middot; two answer blanks<br>
+        <strong>4.</strong> keep-or-drop toggles, then <code>?</code>
+      </div>
+      <div class="branch">
+        <span class="tag expo">exponential</span> <code>y = ? · ?^x</code><br>
+        ExponentialTransformer &middot; one answer blank<br>
+        <strong>4.</strong> <code>x</code> measures <code>?</code>, so <code>?</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Notes</h2>
+    <p>The <strong>model blank rewrites the rest of the question</strong> — template, pill set,
+      how many answer blanks there are, and which closing sentence is asked. Picking the wrong
+      family is never a dead end: the learner gets that template, fills it, solves it, and the
+      argument fails <em>in the mathematics</em> on Check.</p>
+    <p>The <strong>workspace is seeded from the learner's own filled-in template</strong>, not from
+      the right answer. Model a draining tank as <code>y = 4x + 60</code> and the solver hands you
+      <code>4x + 60 = 0</code> and cheerfully solves it to <code>x = −15</code>.</p>
+    <p><strong>Nothing hints at why a solution might not belong.</strong> On the quadratic branch
+      both roots are offered as toggles and either, both or one can be kept — the learner has to
+      notice that a negative time is before the throw.</p>
+    <p>The <strong>graph appears only at the very end</strong>. Shown earlier it would give away the
+      family; shown last it ties the answer to the curve — and it plots the <em>real</em> situation
+      while marking the answers the learner actually committed to.</p>
+    <p>Template blanks are all visible at once — an expression reads better whole — while the
+      sentence blanks in stage 4 still arrive one at a time.</p>
+  </div>
+
+  <div class="card">
+    <h2>The solve workspace</h2>
+    <p>Each branch loads a different transformer. All three share
+      <em>Add, Subtract, Multiply by, Divide by, Combine</em>; the quadratic adds
+      <em>Factor, Split cases, Square root</em>; the exponential adds
+      <em>Take log</em> and <em>Raise to power</em>.</p>
+    <p><strong>Add and Subtract do not tidy up after themselves.</strong> They leave
+      <code>−4x + 60 − 60 = 0 − 60</code> on the page and you have to hit <em>Combine</em>; that is
+      the step most solvers hide.</p>
+    <p>The intended exponential route is <em>÷ 50 → Take log base 2</em>. It runs real algebra, not
+      a script — any legal move is allowed and illegal ones are refused with a reason
+      ("Take a log once the power is on its own", "That would leave a fraction").</p>
+    <p><strong>The workspace is scaffolding; the final-answer blanks are the commitment.</strong>
+      Nothing is auto-filled from the working-out.</p>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- scenarios
+const SCENARIOS = {
+  bacteria: {
+    name: 'Bacteria',
+    sub: 'doubles every hour — exponential',
+    context: 'A culture starts at 50 bacteria and doubles every hour. When does it reach 800?',
+    legend: 'y = number of bacteria, x = hours since the start',
+    model: 'exponential',
+    coeffs: { ea: 50, eb: 2 },
+    numberBank: [-50, -2, 0, 2, 4, 50],
+    target: 800,
+    targetBank: [0, 50, 100, 800],
+    targetSentence: 'We want the time when',
+    operandBank: [-50, 2, 3, 4, 16, 50, 800],
+    roots: [4],
+    rootBank: [2, 4, 8, 16],
+    means: 'hours',
+    meansOptions: [
+      { id: 'hours',  text: 'the number of hours since the start' },
+      { id: 'count',  text: 'the number of bacteria in the culture' },
+      { id: 'rate',   text: 'how many times the culture doubles each hour' }
+    ],
+    conclusions: [
+      { id: 'at4',    text: 'the culture reaches 800 bacteria after 4 hours' },
+      { id: 'at16',   text: 'the culture reaches 800 bacteria after 16 hours' },
+      { id: 'never',  text: 'the culture never reaches 800 bacteria' },
+      { id: 'twice',  text: 'the culture passes 800 bacteria twice' }
+    ],
+    conclusion: 'at4',
+    f: x => 50 * Math.pow(2, x),
+    plot: { xMin: -0.9, xMax: 4.7, yMin: -120, yMax: 1080 },
+    xLabel: 'x (hours)', yLabel: 'y (bacteria)', preLabel: 'before the start'
+  },
+
+  tank: {
+    name: 'Tank',
+    sub: 'steady 4 L per minute — linear',
+    context: 'A tank holds 60 litres and drains at a steady 4 litres per minute. When is it empty?',
+    legend: 'y = litres in the tank, x = minutes since draining began',
+    model: 'linear',
+    coeffs: { lm: -4, lc: 60 },
+    numberBank: [-60, -4, 0, 4, 15, 60],
+    target: 0,
+    targetBank: [0, 4, 15, 60],
+    targetSentence: 'The tank is empty when',
+    operandBank: [-60, -4, 4, 7, 15, 60],
+    roots: [15],
+    rootBank: [4, 15, 30, 60],
+    means: 'minutes',
+    meansOptions: [
+      { id: 'minutes', text: 'the number of minutes since draining began' },
+      { id: 'litres',  text: 'the number of litres left in the tank' },
+      { id: 'rate',    text: 'how many litres drain away each minute' }
+    ],
+    conclusions: [
+      { id: 'at15',   text: 'the tank is empty after 15 minutes' },
+      { id: 'at60',   text: 'the tank is empty after 60 minutes' },
+      { id: 'at4',    text: 'the tank is empty after 4 minutes' },
+      { id: 'never',  text: 'the tank never empties' }
+    ],
+    conclusion: 'at15',
+    f: x => -4 * x + 60,
+    plot: { xMin: -1.6, xMax: 18, yMin: -13, yMax: 70 },
+    xLabel: 'x (min)', yLabel: 'y (litres)', preLabel: 'before draining'
+  },
+
+  ball: {
+    name: 'Ball',
+    sub: 'thrown off a building — quadratic',
+    context: 'A ball is thrown straight up at 15 m/s from the top of a 20 m building. ' +
+             'When does it hit the ground?',
+    legend: 'y = height in metres, x = seconds since the throw',
+    model: 'quadratic',
+    coeffs: { qa: -5, qb: 15, qc: 20 },
+    numberBank: [-20, -5, 0, 5, 15, 20],
+    target: 0,
+    targetBank: [0, 5, 15, 20],
+    targetSentence: 'It hits the ground when',
+    operandBank: [-5, -1, 1, 4, 5, 15, 20],
+    roots: [-1, 4],
+    rootBank: [-4, -1, 1, 4, 5],
+    means: 'seconds',
+    meansOptions: [
+      { id: 'seconds', text: 'the number of seconds since the throw' },
+      { id: 'height',  text: 'the height of the ball above the ground' },
+      { id: 'speed',   text: 'the speed the ball was thrown at' }
+    ],
+    conclusions: [
+      { id: 'lands4', text: 'the ball lands after 4 seconds' },
+      { id: 'lands1', text: 'the ball lands after 1 second' },
+      { id: 'never',  text: 'the ball never lands' },
+      { id: 'twice',  text: 'the ball reaches the ground twice' }
+    ],
+    conclusion: 'lands4',
+    f: x => -5 * x * x + 15 * x + 20,
+    plot: { xMin: -2, xMax: 5, yMin: -12, yMax: 34 },
+    xLabel: 'x (s)', yLabel: 'y (m)', preLabel: 'before the throw'
+  }
+};
+
+const MODELS = [
+  { id: 'linear',      text: 'linear' },
+  { id: 'quadratic',   text: 'quadratic' },
+  { id: 'exponential', text: 'exponential' }
+];
+
+// which pick keys make up each template
+const TEMPLATE_BLANKS = {
+  linear:      ['lm', 'lc'],
+  quadratic:   ['qa', 'qb', 'qc'],
+  exponential: ['ea', 'eb']
+};
+
+const state = { key: 'bacteria', picks: {}, checked: false, tf: null };
+let seen = new Set();
+
+function S() { return SCENARIOS[state.key]; }
+function K(tex, opts) { return katex.renderToString(tex, Object.assign({ throwOnError: false }, opts || {})); }
+function num(n) { return n < 0 ? '−' + Math.abs(n) : String(n); }
+function chosen() { return state.picks.model || null; }
+
+// ================================================================ solver
+// Three small transformers in the spirit of QuadraticEquationTransformer. The
+// learner applies real algebra actions and each one appends a step row.
+//
+// Equation shapes:
+//   lin   m·x + k            = rhs
+//   quad  a·x² + b·x + c     = rhs
+//   fact  (x − r1)(x − r2)   = rhs
+//   exp   A·B^x + k          = rhs
+// Every shape carries `pend`: constants that have been added to both sides but
+// not yet collected. Combine is what collects them.
+
+const ALL_ACTIONS = {
+  add:      { label: 'Add',           operand: 'num'  },
+  subtract: { label: 'Subtract',      operand: 'num'  },
+  multiply: { label: 'Multiply by',   operand: 'num'  },
+  divide:   { label: 'Divide by',     operand: 'num'  },
+  log:      { label: 'Take log base', operand: 'base' },
+  power:    { label: 'Raise to power',operand: 'pow'  },
+  combine:  { label: 'Combine',       operand: null   },
+  factor:   { label: 'Factor',        operand: null   },
+  split:    { label: 'Split cases',   operand: null   },
+  sqrt:     { label: 'Square root',   operand: null   }
+};
+
+const PILLS = {
+  linear:      ['add', 'subtract', 'multiply', 'divide', 'combine'],
+  quadratic:   ['add', 'subtract', 'multiply', 'divide', 'combine', 'factor', 'split', 'sqrt'],
+  exponential: ['add', 'subtract', 'multiply', 'divide', 'log', 'power', 'combine']
+};
+
+const LOG_BASES = [2, 3, 10];
+const POWERS = [2, 3];
+
+function pickNum(v, dflt) { return typeof v === 'number' ? v : dflt; }
+
+// the workspace is seeded from whatever the learner modelled, right or wrong
+function builtEq() {
+  const p = state.picks;
+  const tgt = pickNum(p.target, 0);
+  if (p.model === 'linear')
+    return { t: 'lin', m: pickNum(p.lm, 1), k: pickNum(p.lc, 0), rhs: tgt, pend: [] };
+  if (p.model === 'quadratic')
+    return { t: 'quad', a: pickNum(p.qa, 1), b: pickNum(p.qb, 0), c: pickNum(p.qc, 0), rhs: tgt, pend: [] };
+  return { t: 'exp', A: pickNum(p.ea, 1), B: pickNum(p.eb, 2), k: 0, rhs: tgt, pend: [] };
+}
+function modelSig() {
+  const p = state.picks;
+  return [state.key, p.model, p.lm, p.lc, p.qa, p.qb, p.qc, p.ea, p.eb, p.target].join('|');
+}
+function newTF() {
+  return { sig: modelSig(), pre: [{ eq: builtEq(), via: null }], split: null,
+           side: 'left', pending: null, message: '' };
+}
+function tf() {
+  // rebuild whenever the modelled equation changes, whatever order things ran in
+  if (!state.tf || state.tf.sig !== modelSig()) state.tf = newTF();
+  return state.tf;
+}
+function lastEq() {
+  const T = tf();
+  if (!T.split) return T.pre[T.pre.length - 1].eq;
+  const arr = T.split[T.side];
+  return arr[arr.length - 1].eq;
+}
+function pushEq(eq, via) {
+  const T = tf();
+  if (!T.split) T.pre.push({ eq: eq, via: via });
+  else T.split[T.side].push({ eq: eq, via: via });
+}
+function dirty(eq) { return !!(eq.pend && eq.pend.length); }
+function isSolved(eq) { return eq.t === 'lin' && eq.m === 1 && eq.k === 0 && !dirty(eq); }
+
+function perfectSqrt(n) {
+  if (n < 0) return null;
+  const r = Math.round(Math.sqrt(n));
+  return r * r === n ? r : null;
+}
+// exact integer log, or null
+function intLog(base, value) {
+  if (base <= 1 || value <= 0) return null;
+  const r = Math.round(Math.log(value) / Math.log(base));
+  return Math.pow(base, r) === value ? r : null;
+}
+function clone(eq) { return Object.assign({}, eq, { pend: (eq.pend || []).slice() }); }
+
+// returns an error string, or '' when the action was applied
+function applyAction(id, n) {
+  const eq = lastEq();
+  const T = tf();
+
+  // ---- add / subtract: leave the raw terms on the page for Combine to collect
+  if (id === 'add' || id === 'subtract') {
+    if (eq.t === 'fact') return 'Nothing can be added to a factored product — split the cases first.';
+    const d = id === 'add' ? n : -n;
+    if (d === 0) return 'Adding zero changes nothing.';
+    const e = clone(eq);
+    e.pend.push(d);
+    pushEq(e, (id === 'add' ? '+ ' : '− ') + num(n));
+    return '';
+  }
+
+  // ---- combine: collect the pending constants into the equation proper
+  if (id === 'combine') {
+    if (!dirty(eq)) return 'Nothing to combine — the like terms are already collected.';
+    const s = eq.pend.reduce((a, b) => a + b, 0);
+    const e = clone(eq);
+    e.pend = [];
+    if (e.t === 'quad') e.c += s;
+    else if (e.t === 'lin') e.k += s;
+    else if (e.t === 'exp') e.k += s;
+    e.rhs += s;
+    pushEq(e, 'combine');
+    return '';
+  }
+
+  // ---- multiply / divide
+  if (id === 'multiply' || id === 'divide') {
+    if (eq.t === 'fact') return 'Split the cases before scaling a factored product.';
+    if (dirty(eq)) return 'Combine the like terms before ' +
+      (id === 'multiply' ? 'multiplying.' : 'dividing.');
+    if (n === 0) return id === 'divide' ? 'Dividing by zero is not allowed.'
+                                        : 'Multiplying by zero throws the equation away.';
+    const f = id === 'multiply' ? n : 1 / n;
+    const via = (id === 'multiply' ? '× ' : '÷ ') + num(n);
+    if (eq.t === 'quad') {
+      const v = [eq.a * f, eq.b * f, eq.c * f, eq.rhs * f];
+      if (v.some(x => !Number.isInteger(x))) return 'That would leave a fraction.';
+      pushEq({ t: 'quad', a: v[0], b: v[1], c: v[2], rhs: v[3], pend: [] }, via);
+      return '';
+    }
+    if (eq.t === 'lin') {
+      const v = [eq.m * f, eq.k * f, eq.rhs * f];
+      if (v.some(x => !Number.isInteger(x))) return 'That would leave a fraction.';
+      pushEq({ t: 'lin', m: v[0], k: v[1], rhs: v[2], pend: [] }, via);
+      return '';
+    }
+    // exp: A·B^x + k = rhs — scaling touches A, k and rhs, never the base
+    const v = [eq.A * f, eq.k * f, eq.rhs * f];
+    if (v.some(x => !Number.isInteger(x))) return 'That would leave a fraction.';
+    pushEq({ t: 'exp', A: v[0], B: eq.B, k: v[1], rhs: v[2], pend: [] }, via);
+    return '';
+  }
+
+  // ---- take log of both sides (ExponentialTransformer)
+  if (id === 'log') {
+    if (eq.t !== 'exp') return 'There is no power here to take a log of.';
+    if (dirty(eq)) return 'Combine the like terms before taking a log.';
+    if (eq.A !== 1 || eq.k !== 0) return 'Take a log once the power is on its own.';
+    if (eq.B <= 0) return 'A base that is not positive has no logarithm.';
+    if (eq.B === 1) return 'A base of 1 never changes — there is no power to undo.';
+    if (eq.rhs <= 0) return 'You cannot take the log of a number that is not positive.';
+    const p = intLog(n, eq.B);
+    if (p === null) return 'A log base ' + n + ' will not clear a power of ' + eq.B +
+      ' — try base ' + eq.B + '.';
+    const q = intLog(n, eq.rhs);
+    if (q === null) return 'That log is not a whole number — this base will not finish the job.';
+    // log_n(B^x) = x·log_n(B) = x·p, and log_n(rhs) = q
+    pushEq({ t: 'lin', m: p, k: 0, rhs: q, pend: [] }, 'log' + sub(n));
+    return '';
+  }
+
+  // ---- raise both sides to a power (ExponentialTransformer)
+  if (id === 'power') {
+    if (eq.t !== 'exp') return 'Raise to a power only once the equation is a bare power.';
+    if (dirty(eq)) return 'Combine the like terms before raising to a power.';
+    if (eq.A !== 1 || eq.k !== 0) return 'Take the coefficient off first — raise to a power only ' +
+      'once the equation is a bare power.';
+    const B2 = Math.pow(eq.B, n), R2 = Math.pow(eq.rhs, n);
+    if (!Number.isInteger(B2) || !Number.isInteger(R2)) return 'That would leave a fraction.';
+    if (Math.abs(B2) > 1e6 || Math.abs(R2) > 1e9) return 'Those numbers are getting away from us.';
+    pushEq({ t: 'exp', A: 1, B: B2, k: 0, rhs: R2, pend: [] }, '( )^' + n);
+    return '';
+  }
+
+  // ---- quadratic-only moves
+  if (id === 'factor') {
+    if (eq.t !== 'quad') return 'There is no quadratic left to factor.';
+    if (dirty(eq)) return 'Combine the like terms before factoring.';
+    if (eq.rhs !== 0) return 'Factoring helps once the other side is 0.';
+    if (eq.a !== 1) return 'Factor once the x² coefficient is 1.';
+    const D = eq.b * eq.b - 4 * eq.c;
+    const rt = perfectSqrt(D);
+    if (rt === null) return D < 0
+      ? 'No real factors — the discriminant is negative.'
+      : 'This one does not factor over the integers.';
+    pushEq({ t: 'fact', r1: (-eq.b - rt) / 2, r2: (-eq.b + rt) / 2, rhs: 0, pend: [] }, 'factor');
+    return '';
+  }
+
+  if (id === 'split') {
+    if (eq.t !== 'fact') return 'Split cases once the equation is a product equal to 0.';
+    if (T.split) return 'Already split into cases.';
+    T.split = {
+      left:  [{ eq: { t: 'lin', m: 1, k: -eq.r1, rhs: 0, pend: [] }, via: 'case 1' }],
+      right: [{ eq: { t: 'lin', m: 1, k: -eq.r2, rhs: 0, pend: [] }, via: 'case 2' }]
+    };
+    T.side = 'left';
+    return '';
+  }
+
+  if (id === 'sqrt') {
+    if (eq.t !== 'quad') return 'Take a square root once the equation looks like x² = k.';
+    if (dirty(eq)) return 'Combine the like terms before taking a square root.';
+    if (eq.b !== 0) return 'Take a square root once the equation looks like x² = k.';
+    if (eq.c !== 0) return 'Move the constant across first.';
+    const q = eq.rhs / eq.a;
+    if (!Number.isInteger(q)) return 'That would leave a fraction.';
+    if (q < 0) return 'No real square root — the right side is negative.';
+    const rt = perfectSqrt(q);
+    if (rt === null) return 'That root is not a whole number.';
+    T.split = {
+      left:  [{ eq: { t: 'lin', m: 1, k: 0, rhs: rt,  pend: [] }, via: '+√' }],
+      right: [{ eq: { t: 'lin', m: 1, k: 0, rhs: -rt, pend: [] }, via: '−√' }]
+    };
+    T.side = 'left';
+    return '';
+  }
+  return 'Nothing to do here.';
+}
+
+function sub(n) {
+  const digits = '₀₁₂₃₄₅₆₇₈₉';
+  return String(n).split('').map(d => digits[Number(d)] || d).join('');
+}
+
+function undoStep() {
+  const T = tf();
+  if (T.split) {
+    const arr = T.split[T.side];
+    if (arr.length > 1) { arr.pop(); return; }
+    const other = T.split[T.side === 'left' ? 'right' : 'left'];
+    if (other.length > 1) { other.pop(); return; }
+    T.split = null;               // undo the split itself
+    return;
+  }
+  if (T.pre.length > 1) T.pre.pop();
+}
+
+// ---- equation to LaTeX
+function polyLHS(terms) {
+  let out = '';
+  terms.forEach(([v, sfx]) => {
+    if (v === 0) return;
+    const mag = Math.abs(v);
+    const magStr = (sfx && mag === 1) ? '' : String(mag);
+    if (out === '') out = (v < 0 ? '-' : '') + magStr + sfx;
+    else out += (v < 0 ? ' - ' : ' + ') + magStr + sfx;
+  });
+  return out === '' ? '0' : out;
+}
+function expLHS(eq) {
+  const base = eq.B < 0 ? '\\left(' + eq.B + '\\right)' : String(eq.B);
+  let out;
+  if (eq.A === 1) out = base + '^{x}';
+  else if (eq.A === -1) out = '-' + base + '^{x}';
+  else if (eq.A === 0) out = '0';
+  else out = eq.A + ' \\cdot ' + base + '^{x}';
+  if (eq.k) out += (eq.k < 0 ? ' - ' + Math.abs(eq.k) : ' + ' + eq.k);
+  return out;
+}
+function eqTex(eq) {
+  if (eq.t === 'fact') {
+    const f = r => '(x ' + (r < 0 ? '+ ' + Math.abs(r) : '- ' + r) + ')';
+    return f(eq.r1) + f(eq.r2) + ' = ' + eq.rhs;
+  }
+  let lhs = eq.t === 'quad' ? polyLHS([[eq.a, 'x^2'], [eq.b, 'x'], [eq.c, '']])
+          : eq.t === 'lin'  ? polyLHS([[eq.m, 'x'], [eq.k, '']])
+          : expLHS(eq);
+  let rhs = String(eq.rhs);
+  (eq.pend || []).forEach(p => {
+    const s = p < 0 ? ' - ' + Math.abs(p) : ' + ' + p;
+    lhs += s; rhs += s;
+  });
+  return lhs + ' = ' + rhs;
+}
+
+// ---------------------------------------------------------------- blank order
+function answerBlanks() { return chosen() === 'quadratic' ? ['r1', 'r2'] : ['r1']; }
+function closingBlanks() { return chosen() === 'quadratic' ? ['accept', 'concl'] : ['means', 'concl']; }
+function blankOrder() {
+  const o = ['model'];
+  const m = chosen();
+  if (!m) return o;
+  return o.concat(TEMPLATE_BLANKS[m], ['target'], answerBlanks(), closingBlanks());
+}
+function activeBlank() { return blankOrder().find(b => !filled(b)) || null; }
+function filled(b) {
+  const v = state.picks[b];
+  if (Array.isArray(v)) return v.length > 0;   // accept is a multi-select
+  return v !== undefined && v !== null;
+}
+function templateDone() { return !!chosen() && TEMPLATE_BLANKS[chosen()].every(filled); }
+function stage2Done() { return templateDone() && filled('target'); }
+function stage3Done() { return stage2Done() && answerBlanks().every(filled); }
+function allDone() { return blankOrder().every(filled); }
+
+// ---------------------------------------------------------------- options
+function optionsFor(b) {
+  const s = S();
+  if (b === 'model') return MODELS;
+  if (['lm','lc','qa','qb','qc','ea','eb'].includes(b))
+    return s.numberBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'target') return s.targetBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'r1' || b === 'r2') return s.rootBank.map(n => ({ id: n, text: num(n) }));
+  if (b === 'means') return s.meansOptions;
+  if (b === 'concl') return s.conclusions;
+  return [];
+}
+function textFor(b, id) {
+  const o = optionsFor(b).find(o => String(o.id) === String(id));
+  return o ? o.text : '';
+}
+
+// ---------------------------------------------------------------- grading
+function isRight(b) {
+  const s = S(), p = state.picks;
+  const rightModel = p.model === s.model;
+  if (b === 'model') return rightModel;
+  if (['lm','lc','qa','qb','qc','ea','eb'].includes(b))
+    return rightModel && p[b] === s.coeffs[b];
+  if (b === 'target') return p.target === s.target;
+  if (b === 'r1' || b === 'r2') {
+    if (!rightModel) return false;
+    const picks = answerBlanks().map(k => p[k]).filter(v => typeof v === 'number')
+      .slice().sort((x, y) => x - y);
+    const want = s.roots.slice().sort((x, y) => x - y);
+    return picks.length === want.length && picks.every((v, i) => v === want[i]);
+  }
+  if (b === 'accept') {
+    const offered = [p.r1, p.r2].filter(v => typeof v === 'number');
+    const want = offered.filter(v => v >= 0).slice().sort((x, y) => x - y);
+    const got = (p.accept || []).slice().sort((x, y) => x - y);
+    return got.length === want.length && got.every((v, i) => v === want[i]);
+  }
+  if (b === 'means') return rightModel && p.means === s.means;
+  if (b === 'concl') return p.concl === s.conclusion;
+  return false;
+}
+
+// ---------------------------------------------------------------- rendering
+function slotHTML(b, wide) {
+  const p = state.picks[b];
+  let cls = 'slot ' + (filled(b) ? 'filled' : 'empty');
+  if (!filled(b) && activeBlank() === b) cls += ' active';
+  if (state.checked && filled(b)) cls += isRight(b) ? ' right' : ' wrong';
+  const label = filled(b) ? textFor(b, p) : '&nbsp;';
+  return '<span class="' + cls + '" data-blank="' + b + '"' +
+         (wide ? ' style="min-width:' + wide + 'px"' : '') + '>' + label + '</span>';
+}
+// the learner picks which of their own solutions to keep — either, both or one.
+// Nothing here says why one of them might not belong.
+function acceptTogglesHTML() {
+  const p = state.picks;
+  const chosenVals = p.accept || [];
+  const offered = [p.r1, p.r2].filter(v => typeof v === 'number');
+  return offered.map(v => {
+    const on = chosenVals.includes(v);
+    let cls = 'toggle' + (on ? ' on' : '');
+    if (state.checked && filled('accept')) {
+      const shouldBeOn = v >= 0;
+      if (on !== shouldBeOn) cls += ' wrong'; else if (on) cls += ' right';
+    }
+    return '<span class="' + cls + '" data-accept="' + v + '">x = ' + num(v) + '</span>';
+  }).join('');
+}
+
+function frag(key, html) {
+  const isNew = !seen.has(key);
+  seen.add(key);
+  return '<span class="frag' + (isNew ? ' reveal' : '') + '">' + html + '</span>';
+}
+function stageCard(key, n, title, inner) {
+  const isNew = !seen.has('stage-' + key);
+  seen.add('stage-' + key);
+  return '<div class="stage' + (isNew ? ' reveal' : '') + '" style="margin-bottom:10px">' +
+    '<div class="stage-head"><span class="n">' + n + '</span>' + title + '</div>' + inner + '</div>';
+}
+
+function renderDatasetButtons() {
+  const host = document.getElementById('dataset-buttons');
+  host.innerHTML = '';
+  Object.entries(SCENARIOS).forEach(([key, s]) => {
+    const b = document.createElement('button');
+    b.className = 'dataset-btn' + (key === state.key ? ' active' : '');
+    b.innerHTML = s.name + '<span class="sub">' + s.sub + '</span>';
+    b.onclick = () => { state.key = key; resetPicks(); renderAll(); };
+    host.appendChild(b);
+  });
+}
+
+function templateHTML() {
+  const m = chosen();
+  if (m === 'linear')
+    return '<div class="eq">' + K('y =') + slotHTML('lm') + K('x +') + slotHTML('lc') + '</div>';
+  if (m === 'quadratic')
+    return '<div class="eq">' + K('y =') + slotHTML('qa') + K('x^2 +') + slotHTML('qb') +
+           K('x +') + slotHTML('qc') + '</div>';
+  return '<div class="eq">' + K('y =') + slotHTML('ea') + K('\\cdot') + slotHTML('eb') +
+         '<span class="expo-sup">' + K('{}^{x}') + '</span></div>';
+}
+
+function renderStages() {
+  const s = S(), p = state.picks, m = chosen();
+  let html = '';
+
+  // ---- stage 1: which model?
+  const s1 = '<div class="line" style="text-align:center">This situation is best modelled as ' +
+    slotHTML('model', 116) + '</div>';
+  html += stageCard('choose', 1, 'Which model?', s1);
+
+  // ---- stage 2: fill the template they chose
+  if (m) {
+    let s2 = templateHTML();
+    if (templateDone()) {
+      s2 += frag('target-line',
+        '<div class="line" style="text-align:center">' + s.targetSentence + ' ' +
+        K('y =') + ' ' + slotHTML('target') + '</div>');
+    }
+    if (stage2Done()) {
+      s2 += frag('derived',
+        '<div class="derived">So we solve &nbsp;' + K(eqTex(builtEq())) + '</div>');
+    }
+    html += stageCard('template-' + m, 2, 'Fill the template', s2);
+  }
+
+  // ---- stage 3: solve, with a transformer workspace as the working-out
+  if (stage2Done()) {
+    let s3 = workspaceHTML();
+    s3 += '<div class="final-label">Final answer</div>';
+    if (m === 'quadratic') {
+      s3 += '<div class="eq">' + K('x =') + slotHTML('r1') + K('\\quad\\text{or}\\quad') +
+            K('x =') + slotHTML('r2') + '</div>';
+    } else {
+      s3 += '<div class="eq">' + K('x =') + slotHTML('r1') + '</div>';
+    }
+    html += stageCard('solve-' + m, 3, 'Solve', s3);
+  }
+
+  // ---- stage 4: draw conclusions
+  if (stage3Done()) {
+    let s4 = '';
+    if (m === 'quadratic') {
+      s4 += frag('int-a',
+        '<div class="line">The solutions that make sense here are ' + acceptTogglesHTML() + '</div>');
+      if (filled('accept')) {
+        s4 += frag('int-b', '<div class="line">so ' + slotHTML('concl', 150) + '</div>');
+      }
+    } else {
+      s4 += frag('int-a',
+        '<div class="line">Here ' + K('x') + ' measures ' + slotHTML('means', 150) + '</div>');
+      if (filled('means')) {
+        s4 += frag('int-b', '<div class="line">so ' + slotHTML('concl', 150) + '</div>');
+      }
+    }
+    if (filled('concl')) s4 += frag('plot', '<div class="plot">' + plotSVG() + '</div>');
+    html += stageCard('interpret-' + m, 4, 'Draw conclusions', s4);
+  }
+
+  document.getElementById('stages').innerHTML = html;
+  document.querySelectorAll('.slot').forEach(el => {
+    el.onclick = () => onSlotClick(el.dataset.blank);
+  });
+  document.querySelectorAll('[data-accept]').forEach(el => {
+    el.onclick = () => {
+      const v = Number(el.dataset.accept);
+      const cur = state.picks.accept || [];
+      state.picks.accept = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
+      state.checked = false;
+      renderAll();
+    };
+  });
+  wireWorkspace();
+}
+
+// ---- the transformer workspace: step rows, action pills, undo
+function rowHTML(r, isLast) {
+  return (r.via ? '<div class="via">' + r.via + '</div>' : '') +
+    '<div class="eqrow' + (isLast ? ' current' : '') + '">' + K(eqTex(r.eq)) + '</div>';
+}
+
+function operandBankFor(kind) {
+  if (kind === 'base') return LOG_BASES;
+  if (kind === 'pow') return POWERS;
+  return S().operandBank;
+}
+
+function workspaceHTML() {
+  const T = tf();
+  const ids = PILLS[chosen()] || PILLS.linear;
+  let h = '<div class="workspace">';
+
+  T.pre.forEach((r, i) => { h += rowHTML(r, !T.split && i === T.pre.length - 1); });
+
+  if (T.split) {
+    h += '<div class="cases">';
+    ['left', 'right'].forEach(side => {
+      const rows = T.split[side];
+      h += '<div class="case' + (T.side === side ? ' active' : '') + '" data-side="' + side + '">';
+      rows.forEach((r, i) => { h += rowHTML(r, i === rows.length - 1); });
+      if (isSolved(rows[rows.length - 1].eq)) h += '<div class="case-done">solved</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+    h += '<div class="case-hint">Tap a case to work on it</div>';
+  }
+  h += '</div>';
+
+  // actions bank, or the operand pad once an action needs a number
+  if (T.pending) {
+    const act = ALL_ACTIONS[T.pending];
+    h += '<div class="operand-bar"><span class="operand-label">' + act.label + '</span>' +
+      operandBankFor(act.operand).map(n =>
+        '<button class="pill operand" data-operand="' + n + '">' + num(n) + '</button>').join('') +
+      '<button class="pill cancel" data-cancel="1">&times;</button></div>';
+  } else {
+    h += '<div class="actions-bank">' +
+      ids.map(id => '<button class="pill" data-action="' + id + '">' + ALL_ACTIONS[id].label +
+        '</button>').join('') +
+      '<button class="pill undo" data-undo="1">&#8630; Undo</button></div>';
+  }
+  if (T.message) h += '<div class="tf-message">' + T.message + '</div>';
+  return h;
+}
+
+function wireWorkspace() {
+  const T = tf();
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.action;
+      T.message = '';
+      if (ALL_ACTIONS[id].operand) { T.pending = id; }
+      else { T.message = applyAction(id, null); }
+      renderAll();
+    };
+  });
+  document.querySelectorAll('[data-operand]').forEach(el => {
+    el.onclick = () => {
+      T.message = applyAction(T.pending, Number(el.dataset.operand));
+      T.pending = null;
+      renderAll();
+    };
+  });
+  const cancel = document.querySelector('[data-cancel]');
+  if (cancel) cancel.onclick = () => { T.pending = null; T.message = ''; renderAll(); };
+  const undo = document.querySelector('[data-undo]');
+  if (undo) undo.onclick = () => { undoStep(); T.message = ''; renderAll(); };
+  document.querySelectorAll('[data-side]').forEach(el => {
+    el.onclick = () => { T.side = el.dataset.side; T.message = ''; renderAll(); };
+  });
+}
+
+// the real situation, with the target value and the answers the learner committed to
+function plotSVG() {
+  const s = S(), pl = s.plot;
+  const W = 320, H = 190, ml = 34, mr = 12, mt = 10, mb = 30;
+  const X = x => ml + (x - pl.xMin) / (pl.xMax - pl.xMin) * (W - ml - mr);
+  const Y = y => mt + (pl.yMax - y) / (pl.yMax - pl.yMin) * (H - mt - mb);
+
+  let d = '';
+  for (let i = 0; i <= 160; i++) {
+    const x = pl.xMin + (pl.xMax - pl.xMin) * i / 160;
+    d += (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(s.f(x)).toFixed(1) + ' ';
+  }
+
+  const answers = answerBlanks().map(k => state.picks[k]).filter(v => typeof v === 'number');
+  const accepted = state.picks.accept || [];
+  const marks = answers.map(x => {
+    // before Check the graph mirrors the learner's choice; after Check it tells the truth
+    const keep = chosen() !== 'quadratic' ? true
+               : state.checked ? x >= 0
+               : accepted.includes(x);
+    // an answer outside the plotted range is pinned to the edge rather than lost
+    const off = x < pl.xMin || x > pl.xMax;
+    const cx = X(Math.min(Math.max(x, pl.xMin + 0.06), pl.xMax - 0.06));
+    const fill   = off ? '#fff' : (keep ? '#2ecc40' : '#fff');
+    const stroke = off ? '#9a9aa4' : (keep ? '#1e9e31' : '#e74c3c');
+    const label  = off ? (x > pl.xMax ? 'x = ' + num(x) + ' →' : '← x = ' + num(x))
+                       : 'x = ' + num(x);
+    return '<circle cx="' + cx.toFixed(1) + '" cy="' + Y(s.target).toFixed(1) + '" r="5" ' +
+      'fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"' +
+      (off ? ' stroke-dasharray="3 2"' : '') + '/>' +
+      // white halo so the curve never cuts through the label
+      '<text x="' + cx.toFixed(1) + '" y="' + (Y(s.target) - 11).toFixed(1) + '" text-anchor="' +
+      (off ? (x > pl.xMax ? 'end' : 'start') : 'middle') + '" ' +
+      'font-size="10" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" ' +
+      'fill="' + stroke + '">' + label + '</text>';
+  }).join('');
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '">' +
+    '<defs><clipPath id="plotclip"><rect x="' + ml + '" y="' + mt + '" width="' + (W - ml - mr) +
+      '" height="' + (H - mt - mb) + '"/></clipPath></defs>' +
+    // region before the situation starts
+    (pl.xMin < 0 ? '<rect x="' + X(pl.xMin) + '" y="' + mt + '" width="' + (X(0) - X(pl.xMin)) +
+      '" height="' + (H - mt - mb) + '" fill="#f3f3f6"/>' +
+      // only label the band when there is room for the words
+      (X(0) - X(pl.xMin) > 62
+        ? '<text x="' + ((X(pl.xMin) + X(0)) / 2).toFixed(1) + '" y="' + (H - mb - 6) +
+          '" text-anchor="middle" font-size="9" fill="#a0a0aa">' + s.preLabel + '</text>'
+        : '') : '') +
+    // axes
+    '<line x1="' + ml + '" y1="' + Y(0) + '" x2="' + (W - mr) + '" y2="' + Y(0) +
+      '" stroke="#c9c9d2" stroke-width="1"/>' +
+    '<line x1="' + X(0) + '" y1="' + mt + '" x2="' + X(0) + '" y2="' + (H - mb) +
+      '" stroke="#c9c9d2" stroke-width="1"/>' +
+    // the value of y the question asked about
+    '<line x1="' + ml + '" y1="' + Y(s.target) + '" x2="' + (W - mr) + '" y2="' + Y(s.target) +
+      '" stroke="#2f7de1" stroke-width="1.5" stroke-dasharray="5 4"/>' +
+    '<text x="' + (ml - 3) + '" y="' + (Y(s.target) + 3) + '" text-anchor="end" font-size="9" fill="#2f7de1">y=' +
+      s.target + '</text>' +
+    // curve
+    '<path d="' + d + '" fill="none" stroke="#1a1a1a" stroke-width="2" clip-path="url(#plotclip)"/>' +
+    marks +
+    '<text x="' + (W - mr) + '" y="' + (H - 8) + '" text-anchor="end" font-size="10" fill="#8a8a94">' +
+      s.xLabel + '</text>' +
+    '<text x="2" y="' + (mt + 8) + '" font-size="10" fill="#8a8a94">' + s.yLabel + '</text>' +
+    '</svg>';
+}
+
+function renderBank() {
+  const b = activeBlank();
+  const bank = document.getElementById('bank');
+  const caption = document.getElementById('bank-caption');
+  bank.innerHTML = '';
+  if (!b) { caption.textContent = 'Tap any boxed answer to change it'; return; }
+  caption.textContent =
+    b === 'model'  ? 'Which family of model?' :
+    b === 'target' ? 'What value of y are we after?' :
+    b === 'accept' ? 'Tap the solutions you want to keep' :
+    b === 'means'  ? 'What does x measure?' :
+    b === 'concl'  ? 'Say what it means' :
+    (b === 'r1' || b === 'r2') ? 'Solve for x' : 'Fill in the template';
+  if (b === 'accept') return;   // the toggles live in the sentence, not the bank
+  optionsFor(b).forEach(o => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.textContent = o.text;
+    t.onclick = () => { state.picks[b] = o.id; state.checked = false; renderAll(); };
+    bank.appendChild(t);
+  });
+}
+
+function renderFooter() {
+  const btn = document.getElementById('check');
+  const fb = document.getElementById('feedback');
+  const order = blankOrder();
+  const done = allDone();
+
+  document.getElementById('progress').style.width =
+    Math.round(order.filter(filled).length / order.length * 100) + '%';
+
+  btn.className = 'check-btn' + (done ? ' ready' : '');
+  btn.textContent = 'Check';
+  fb.textContent = ''; fb.className = 'feedback';
+
+  if (state.checked) {
+    const ok = order.every(isRight);
+    btn.className = 'check-btn ' + (ok ? 'correct' : 'incorrect');
+    btn.textContent = ok ? 'Correct' : 'Try again';
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    fb.textContent = ok
+      ? 'Chosen, modelled, solved and interpreted — the whole argument holds.'
+      : 'Something in the chain does not hold. Tap a red box to rethink it.';
+  }
+}
+
+function renderContext() {
+  document.getElementById('context-text').textContent = S().context;
+  document.getElementById('model-line').textContent = S().legend;
+}
+
+function renderAll() {
+  renderDatasetButtons();
+  renderContext();
+  renderStages();
+  renderBank();
+  renderFooter();
+}
+
+// ---------------------------------------------------------------- interaction
+function onSlotClick(b) {
+  const order = blankOrder();
+  const i = order.indexOf(b);
+  if (i === -1) return;
+  order.slice(i).forEach(k => { delete state.picks[k]; });
+  // anything downstream should animate in again
+  const keep = new Set(['stage-choose']);
+  if (i > 0) keep.add('stage-template-' + chosen());
+  if (b === 'target' || i > order.indexOf('target')) keep.add('target-line');
+  seen = keep;
+  state.checked = false;
+  renderAll();                 // tf() rebuilds itself whenever the model signature changes
+}
+
+function resetPicks() { state.picks = {}; state.checked = false; state.tf = null; seen = new Set(); }
+
+(function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('s') && SCENARIOS[q.get('s')]) state.key = q.get('s');
+  const raw = q.get('picks');
+  if (raw) {
+    raw.split(',').forEach(pair => {
+      const [k, v] = pair.split(':');
+      if (!k) return;
+      if (k === 'accept') state.picks[k] = v.split('|').map(Number);
+      else state.picks[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+    });
+  }
+  // replay working-out, e.g. steps=divide:50,log:2
+  const steps = q.get('steps');
+  if (steps) {
+    steps.split(',').forEach(st => {
+      const [id, arg] = st.split(':');
+      if (id === 'side') { tf().side = arg; return; }
+      const msg = applyAction(id, arg === undefined ? null : Number(arg));
+      if (msg) tf().message = msg;
+    });
+  }
+  if (q.get('checked') === '1') state.checked = true;
+  seen = new Set();
+})();
+
+document.getElementById('check').onclick = () => { if (allDone()) { state.checked = true; renderAll(); } };
+document.getElementById('reset').onclick = () => { resetPicks(); renderAll(); };
+
+renderAll();
+</script>
+
+</body>
+</html>
